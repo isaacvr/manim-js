@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Animations Framework</title>
+    <style>
+      button, select, input {
+        padding: 5px;
+      }
+    </style>
+  </head>
+  <body>
+
+  </body>
+  <script src="./dist/animator.js" type="module"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js"></script>
+  <script>
+
+    let shapes = {};
+    let fig;
+
+    function init() {
+      shapes['p1'] = new Dot(30, 40);
+      shapes['p2'] = new Dot(-40, 80);
+      shapes['circ'] = new Circle(0, 0, 200);
+      shapes['rec'] = new Rectangle(-250, -90, 500, 180);
+      shapes['tri'] = new Triangle(50, -160, 410, 20, 151, 89);
+      shapes['path'] = new Path([
+        new Point(-550, -160),
+        new Point(-450, 60),
+        new Point(0, -260),
+        new Point(46, -160),
+        new Point(-35, -160)
+      ]);
+      shapes['lin'] = new Line(new Point(-200, 230), new Point(40, -30));
+      shapes['star'] = new Star(0, 0, 6, 190, 70);
+      fig = shapes['circ'].clone();
+    }
+
+    function setup() {
+      createCanvas(1500, 700);
+
+      createP('');
+
+      let btn = createButton('Animate');
+      let speedSlider;
+
+      btn.mousePressed(() => {
+        let arr = [ 'rec', 'tri', 'path', 'p1', 'lin', 'star', 'circ' ];
+        btn.elt.disabled = true;
+
+        // let arr = [ 'rec', 'tri', 'path', 'p1' ];
+
+        let f = (pos) => {
+          if ( pos < arr.length ) {
+            let fig1 = shapes[ arr[pos] ];
+            let dur = +speedSlider.value();
+            return Animator.play(Transform( fig, fig1, dur )).
+              then(() => Animator.wait()).
+              then(() => f(pos + 1));
+          } else {
+            // console.log('LALALA');
+            btn.elt.disabled = false;
+          }
+        };
+
+        f(0);
+
+      });
+
+      speedSlider = createSlider(100, 50000, 1000, 100);
+
+      let from = createSelect();
+      let to = createSelect();
+      let opts = ['p1', 'p2', 'circ', 'rec', 'tri', 'path', 'lin'];
+
+      for (let i = 0, maxi = opts.length; i < maxi; i += 1) {
+        from.option( opts[i] );
+        to.option( opts[i] );
+      }
+
+      let reset = createButton('Reset');
+      reset.mousePressed(init);
+
+      init();
+    }
+
+    function drawFigure(f, str) {
+
+      if ( f instanceof Dot ) {
+        stroke(f.color.toHex());
+        strokeWeight(8);
+        point(f.x, f.y);
+        return;
+      }
+
+      let objs = f.objects;
+      let len = objs.length;
+
+      beginShape();
+
+      if ( f.filled ) {
+        fill(f.color.toHex());
+      } else {
+        noFill();
+      }
+
+      stroke( f.border_color.toHex() );
+      strokeWeight(str || 3);
+
+      for (let i = 0; i < len; i += 1) {
+        vertex(objs[i].x, objs[i].y);
+      }
+
+      endShape(( f.closed ) ? CLOSE : null);
+    }
+
+    function draw() {
+      background(0);
+      translate(width >> 1, height >> 1);
+      drawFigure(fig);
+    }
+
+  </script>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "manim-js",
+  "version": "1.0.0",
+  "description": "Manim-like animation framework for the browser",
+  "main": "./src/index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "chokidar": "2.1.6"
+  },
+  "scripts": {
+    "test": "echo \"No tests availables yet\"",
+    "install-deps": "npm install -g rollup && npm install chokidar",
+    "build": "rollup -c"
+  },
+  "keywords": [
+    "manim",
+    "animations",
+    "javascript",
+    "3b1b",
+    "math"
+  ],
+  "author": "Isaac Vega",
+  "license": "ISC"
+}
