@@ -5,7 +5,7 @@
   "main": "./src/index.js",
   "dependencies": {},
   "devDependencies": {
-    "chokidar": "2.1.6"
+    "chokidar": "^2.1.6"
   },
   "scripts": {
     "test": "echo \"No tests availables yet\"",
@@ -17,6 +17,8 @@
     "animations",
     "javascript",
     "3b1b",
+    "3b1b-videos",
+    "explanatory-math-videos",
     "math"
   ],
   "author": "Isaac Vega",

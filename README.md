@@ -30,6 +30,8 @@ In the root directory of the project, type:
 > node watcher
 ```
 
+That's a very simple program who detects changes and rebuild them.
+
 Then, run a server in the same path:
 
 ```bash
