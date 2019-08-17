@@ -4,69 +4,105 @@
   function interpolate(start, end, alpha) {
     if ( typeof start === 'number' ) {
       return start * (1 - alpha) + end * alpha;
-    } else if ( start instanceof Point ) {
+    } else if ( typeof start.mul === 'function' ) {
       return start.mul(1 - alpha).add( end.mul(alpha) );
     }
-
     return start.interpolate(end, alpha);
   }
 
-  function fastRoot(n) {
-    let res = n;
-    for (let i = 1; i <= 10; i += 1) {
-      res = (res + n / res) / 2;
-    }
-    return res;
+  /**
+   *
+   * @param { number } n
+   * @description
+   * Newthon iterative method for the squared root
+   */
+
+  function clip(val, a, b) {
+    return max( a, min(val, b) );
   }
 
-  function clip(val, min, max) {
-    return Math.max( min, Math.min(val, max) );
+  function max() {
+    return Math.max.apply(null, arguments);
+  }
+
+  function min() {
+    return Math.min.apply(null, arguments);
   }
 
   function sigmoid(x) {
-    return 1 / (1 + Math.exp(-x));
+    return 1 / (1 + exp(-x));
   }
 
-  function straight_path(start, end, alpha) {
-    // console.log('STRAIGHT');
-    return interpolate(start, end, alpha)
+  function exp(x) {
+    return Math.exp(x);
   }
 
-  function rooted_path(start, end, alpha) {
-    return interpolate(start, end, fastRoot(alpha));
+  function sin(x) {
+    return Math.sin(x);
   }
 
-  function rooted3_path(start, end, alpha) {
-    // console.log('ROOTED 3');
-    return interpolate(start, end, Math.pow(alpha, 1.0 / 3));
+  function sinc(x) {
+    if ( Math.abs(x) > 1e-9 ) {
+      return sin(x) / x;
+    }
+    return 1;
   }
 
-  function squared_path(start, end, alpha) {
-    return interpolate(start, end, alpha * alpha);
+  const PI = Math.PI;
+  const PI_2 = PI / 2;
+
+  function linear(start, end, alpha) {
+    return interpolate(start, end, alpha);
   }
 
-  function getPath(path) {
-    switch(path) {
-      case 'straight_path': {
-        return straight_path;
+  function easeIn(start, end, alpha) {
+    return interpolate(start, end, 1 - sin( (alpha + 1) * PI_2));
+  }
+
+  function easeOut(start, end, alpha) {
+    return interpolate(start, end, sin( alpha * PI_2));
+  }
+
+  function easeInOut(start, end, alpha) {
+    return interpolate(start, end, (sin( (alpha * 2 + 3) * PI_2 ) + 1) / 2);
+  }
+
+  function bounce(start, end, alpha) {
+    return interpolate(start, end, 1 - sinc(4 * PI * alpha) * exp( -3 * alpha ) );
+  }
+
+  function softBounce(start, end, alpha) {
+    return interpolate(start, end, 1 - sinc(3 * PI * alpha) * exp( -3 * alpha ) );
+  }
+
+  function getEasing(easing) {
+    switch( easing ) {
+      case 'linear': {
+        return linear;
       }
-      case 'rooted_path': {
-        return rooted_path;
+      case 'easeIn': {
+        return easeIn;
       }
-      case 'squared_path': {
-        return squared_path;
+      case 'easeOut': {
+        return easeOut;
       }
-      case 'rooted3_path': {
-        return rooted3_path;
+      case 'easeInOut': {
+        return easeInOut;
+      }
+      case 'bounce': {
+        return bounce;
+      }
+      case 'softBounce': {
+        return softBounce;
       }
     }
-    return straight_path;
+    return linear;
   }
 
-  class Point$1 {
+  class Point {
 
     constructor(X, Y, Z) {
-      if ( X instanceof Point$1 ) {
+      if ( X instanceof Point ) {
         this.x = X.x;
         this.y = X.y;
         this.z = X.z;
@@ -81,7 +117,7 @@
       let tAbs = Math.abs(abs);
       let x = tAbs * Math.cos(arg);
       let y = tAbs * Math.sin(arg);
-      return new Point$1(x, y, 0);
+      return new Point(x, y, 0);
     }
 
     static fromSpherical(abs, theta, phi) {
@@ -89,27 +125,27 @@
       let x = tAbs * Math.sin(theta) * Math.cos(phi);
       let y = tAbs * Math.sin(theta) * Math.sin(phi);
       let z = tAbs * Math.cos(theta);
-      return new Point$1(x, y, z);
+      return new Point(x, y, z);
     }
 
     static isPoint(p) {
-      return p instanceof Point$1;
+      return p instanceof Point;
     }
 
     add(p) {
-      return new Point$1(this.x + p.x, this.y + p.y, this.z + p.z);
+      return new Point(this.x + p.x, this.y + p.y, this.z + p.z);
     }
 
     sub(p) {
-      return new Point$1(this.x - p.x, this.y - p.y, this.z - p.z);
+      return new Point(this.x - p.x, this.y - p.y, this.z - p.z);
     }
 
     mul(s) {
-      return new Point$1(this.x * s, this.y * s, this.z * s);
+      return new Point(this.x * s, this.y * s, this.z * s);
     }
 
     div(s) {
-      return new Point$1(this.x / s, this.y / s, this.z / s);
+      return new Point(this.x / s, this.y / s, this.z / s);
     }
 
     dot(p) {
@@ -120,7 +156,7 @@
       let x1 = ( this.y * p.z - p.y * this.z );
       let y1 = -( this.x * p.z - p.x * this.z );
       let z1 = ( this.x * p.y - p.x * this.y );
-      return new Point$1(x1, y1, z1);
+      return new Point(x1, y1, z1);
     }
 
     abs() {
@@ -139,11 +175,11 @@
     }
 
     clone() {
-      return new Point$1(this.x, this.y, this.z);
+      return new Point(this.x, this.y, this.z);
     }
 
     interpolate(p1, alpha, interp) {
-      let intp = (typeof interp === 'function') ? interp : getPath(interp);
+      let intp = (typeof interp === 'function') ? interp : getEasing(interp);
       let np = intp(this, p1, clip(alpha, 0, 1));
       this.x = np.x;
       this.y = np.y;
@@ -189,7 +225,7 @@
     } else if ( tp === 'nnu' ) {
       ini = a, fin = b, step = 1;
     } else if ( tp === 'nnn' ) {
-      ini = a, fin = b, step = c;
+      ini = a, fin = b, step = s;
     } else {
       return [];
     }
@@ -286,9 +322,9 @@
       }
     }
 
-    fromCMYK(C, M, Y, K) {
-      throw new ReferenceError('CMYK not supported yet');
-    }
+    // fromCMYK(C, M, Y, K) {
+    //   throw new ReferenceError('CMYK not supported yet');
+    // }
 
     fromRGB(r, g, b) {
       this.r = adjust(r);
@@ -316,7 +352,7 @@
     }
 
     interpolate(col, alpha, interp) {
-      let intp = (typeof interp === 'function') ? interp : getPath(interp);
+      let intp = (typeof interp === 'function') ? interp : getEasing(interp);
       let alp = clip(alpha, 0, 1);
       this.r = adjust( intp(this.r, col.r, alp) );
       this.g = adjust( intp(this.g, col.g, alp) );
@@ -364,7 +400,7 @@
     }
 
     static checkType(p) {
-      return Point$1.isPoint(p) || ( Array.isArray(p) && p.length >= 2 );
+      return Point.isPoint(p) || ( Array.isArray(p) && p.length >= 2 );
     }
 
     loadConfig(config) {
@@ -381,13 +417,13 @@
 
     addFront(pt) {
       if ( Path.checkType(pt) ) {
-        this.objects.unshift(new Point$1(pt));
+        this.objects.unshift(new Point(pt));
       }
     }
 
     addBack(pt) {
       if ( Path.checkType(pt) ) {
-        this.objects.push(new Point$1(pt));
+        this.objects.push(new Point(pt));
       }
     }
 
@@ -534,9 +570,8 @@
     constructor(x, y, z, col) {
       super([], col);
       this.loadConfig(CONFIG$1);
-      // this.color.a = 1;
       this.objects = [
-        new Point$1(x, y, z)
+        new Point(x, y, z)
       ];
     }
 
@@ -552,14 +587,6 @@
       return this.objects[0].z;
     }
 
-    // clone() {
-    //   // let pt = this.objects[0];
-    //   let dt = new Dot();
-    //   dt.objects.length = 0;
-    //   dt.objects = this.objects.map(e => e.clone());
-    //   dt.color = this.color.clone();
-    //   return dt;
-    // }
   }
 
   const CONFIG$2 = {
@@ -572,8 +599,8 @@
       super([], col);
       this.loadConfig(CONFIG$2);
       this.objects = [];
-      this.objects[0] = (a instanceof Point$1) ? a.clone() : new Point$1();
-      this.objects[1] = (b instanceof Point$1) ? b.clone() : new Point$1();
+      this.objects[0] = (a instanceof Point) ? a.clone() : new Point();
+      this.objects[1] = (b instanceof Point) ? b.clone() : new Point();
     }
 
     get p1() {
@@ -610,7 +637,6 @@
     constructor(x1, y1, x2, y2, x3, y3, col) {
       super([], col);
       this.loadConfig(CONFIG$3);
-      // this.color.a = 1;
       this.objects = [];
       if ( Point.isPoint(x1) && Point.isPoint(y1) && Point.isPoint(x2) ) {
         this.objects.push( x1.clone() );
@@ -624,23 +650,14 @@
         this.objects.push( new Point(x1, y1) );
       }
     }
-
-    // clone() {
-    //   let objs = this.objects;
-    //   let tr = new Triangle();
-    //   tr.objects.length = 0;
-    //   tr.objects = objs.map(e => e.clone());
-    //   tr.color = this.color.clone();
-    //   return tr;
-    // }
   }
 
-  const UP = new Point$1(0, 1, 0);
-  const DOWN = new Point$1(0, -1, 0);
-  const LEFT = new Point$1(-1, 0, 0);
-  const RIGHT = new Point$1(1, 0, 0);
-  const OUT = new Point$1(0, 0, -1);
-  const IN = new Point$1(0, 0, 1);
+  const UP = new Point(0, 1, 0);
+  const DOWN = new Point(0, -1, 0);
+  const LEFT = new Point(-1, 0, 0);
+  const RIGHT = new Point(1, 0, 0);
+  const OUT = new Point(0, 0, -1);
+  const IN = new Point(0, 0, 1);
 
   const CIRCLE_POINTS = 100;
 
@@ -659,7 +676,6 @@
     constructor(x, y, w, h, col) {
       super([], col);
       this.loadConfig(CONFIG$4);
-      // this.color.a = 1;
       let p = new Point(x, y, 0);
 
       this.objects = [];
@@ -676,15 +692,6 @@
       return this.objects[0];
     }
 
-    // clone() {
-    //   let p = this.objects[0];
-    //   let rec = new Rectangle(p.x, p.y, this.width, this.height);
-    //   rec.objects.length = 0;
-    //   rec.objects = this.objects.map(e => e.clone());
-    //   rec.color = this.color.clone();
-    //   return rec;
-    // }
-
   }
 
   const CONFIG$5 = {
@@ -696,12 +703,10 @@
     constructor(cx, cy, rad, col) {
       super([], col);
       this.loadConfig(CONFIG$5);
-      // this.color.a = 1;
       this.objects = [];
       this.center = new Point(cx, cy);
       this.rad = rad;
       this.generatePoints();
-      // console.log(this.objects.length);
     }
 
     generatePoints() {
@@ -715,16 +720,6 @@
       this.objects.push( this.objects[0].clone() );
     }
 
-    // clone() {
-    //   let res = new Circle(this.center.x, this.center.y, this.rad);
-    //   res.objects = [];
-    //   res.objects = this.objects.map(e => e.clone());
-    //   res.color = this.color.clone();
-    //   for (let i in CONFIG) {
-    //     res[i] = this[i];
-    //   }
-    //   return res;
-    // }
   }
 
   const CONFIG$6 = {
@@ -741,7 +736,7 @@
     constructor(cx, cy, cant, rl, rs, col) {
       super([], col);
       this.loadConfig(CONFIG$6);
-      this.center = new Point$1(cx, cy);
+      this.center = new Point(cx, cy);
       this.rad_long = rl || this.rad_long;
       this.rad_short = rs || this.rad_short;
       this.cant = cant || this.cant;
@@ -761,7 +756,7 @@
       for (let i = 0, j = 0, maxi = cant << 1; i < maxi; i += 1, j = 1 - j) {
         this.objects.push(
           center.add(
-            Point$1.fromPolar(interpolate(r1, r2, j), arg0 + step * i)
+            Point.fromPolar(interpolate(r1, r2, j), arg0 + step * i)
           )
         );
       }
@@ -772,7 +767,7 @@
 
 
   var geometry = /*#__PURE__*/Object.freeze({
-    Point: Point$1,
+    Point: Point,
     Path: Path,
     Dot: Dot,
     Line: Line,
@@ -831,96 +826,36 @@
       return this.object.clone();
     }
 
-    get_all_mobjects() {
-      return [ this.object, this.starting_object ];
-    }
-
-    update_mobjects(dt) {
-      for ( mob in this.get_all_mobjects_to_update() ) {
-        mob.update(dt);
-      }
-    }
-
-    get_all_mobjects_to_update() {
-      return this.get_all_mobjects().filter(e => e != this.object);
-    }
-
-    interpolate(alpha) {
-      // alpha = np.clip(alpha, 0, 1);
-      // this.interpolate_mobject( this.rate_func(alpha) );
-    }
-
-    update(alpha) {
-      this.interpolate(alpha);
-    }
-
-    // interpolate_mobject(alpha) {
-    //   families = list(this.get_all_families_zipped())
-    //   for (let i, mobs in enumerate(families) ) {
-    //     sub_alpha = this.get_sub_alpha(alpha, i, len(families))
-    //     this.interpolate_submobject(*mobs, sub_alpha);
-    //   }
-    // }
-
-    interpolate_submobject(submobject, starting_sumobject, alpha) {
-
-    }
-
-    get_sub_alpha(alpha, index, num_submobjects) {
-      lag_ratio = this.lag_ratio;
-      full_length = (num_submobjects - 1) * lag_ratio + 1;
-      value = alpha * full_length;
-      lower = index * lag_ratio;
-      return np.clip((value - lower), 0, 1);
-    }
-
-    set_duration(duration) {
-      this.duration = duration;
-      return this
+    interpolate() {
+      /**
+       * To be implemented in derivated classes
+       */
     }
 
     get_duration() {
       return this.duration;
     }
 
-    set_rate_func(rate_func) {
-      this.rate_func = rate_func;
-      return this;
-    }
-
-    get_rate_func() {
-      return this.rate_func;
-    }
-
-    set_name(name) {
-      this.name = name;
-      return this;
-    }
-
-    is_remover() {
-      return this.remover;
-    }
   }
 
   const CONFIG$8 = {
-    path_func: 'straight_path'
+    easing: 'linear'
   };
 
   class Transform extends Animation {
-    constructor(object, target, duration, path_func) {
+    constructor(object, target, duration, easing) {
       super(object);
       this.loadConfig(CONFIG$8);
       this.target = target;
       this.duration = duration || this.duration;
-      this.path_func = path_func || this.path_func;
-      // console.log('PATH_FUNC = ', this.path_func, path_func);
-      this.init_path_func();
+      this.easing = easing || this.easing;
+      this.init_easing();
       // console.log(this.duration);
       // console.log(this.object, this.target);
     }
 
-    init_path_func() {
-      this.path_func = getPath(this.path_func);
+    init_easing() {
+      this.easing = getEasing(this.easing);
     }
 
     begin() {
@@ -962,7 +897,7 @@
     }
 
     interpolate(alpha) {
-      this.object.interpolateBetween(this.object_copy, this.target_copy, alpha, this.path_func);
+      this.object.interpolateBetween(this.object_copy, this.target_copy, alpha, this.easing);
       // this.object.interpolate(this.target_copy, alpha);
     }
   }

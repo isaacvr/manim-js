@@ -1,6 +1,6 @@
 import { types } from '../utils/arrays';
 import { clip } from '../utils/math';
-import { straight_path, getPath } from '../utils/paths';
+import { getEasing } from '../utils/easing';
 
 function adjust(val) {
   return clip( ~~val, 0, 255 );
@@ -63,9 +63,9 @@ class Color {
     }
   }
 
-  fromCMYK(C, M, Y, K) {
-    throw new ReferenceError('CMYK not supported yet');
-  }
+  // fromCMYK(C, M, Y, K) {
+  //   throw new ReferenceError('CMYK not supported yet');
+  // }
 
   fromRGB(r, g, b) {
     this.r = adjust(r);
@@ -93,7 +93,7 @@ class Color {
   }
 
   interpolate(col, alpha, interp) {
-    let intp = (typeof interp === 'function') ? interp : getPath(interp);
+    let intp = (typeof interp === 'function') ? interp : getEasing(interp);
     let alp = clip(alpha, 0, 1);
     this.r = adjust( intp(this.r, col.r, alp) );
     this.g = adjust( intp(this.g, col.g, alp) );

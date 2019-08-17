@@ -35,7 +35,7 @@ function range(a, b, s) {
   } else if ( tp === 'nnu' ) {
     ini = a, fin = b, step = 1;
   } else if ( tp === 'nnn' ) {
-    ini = a, fin = b, step = c;
+    ini = a, fin = b, step = s;
   } else {
     return [];
   }

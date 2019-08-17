@@ -1,4 +1,5 @@
 import { Path } from './Path';
+import { Point } from './Point';
 import { CIRCLE_POINTS } from '../constants';
 
 const CONFIG = {
@@ -10,12 +11,10 @@ class Circle extends Path {
   constructor(cx, cy, rad, col) {
     super([], col);
     this.loadConfig(CONFIG);
-    // this.color.a = 1;
     this.objects = [];
     this.center = new Point(cx, cy);
     this.rad = rad;
     this.generatePoints();
-    // console.log(this.objects.length);
   }
 
   generatePoints() {
@@ -29,16 +28,6 @@ class Circle extends Path {
     this.objects.push( this.objects[0].clone() );
   }
 
-  // clone() {
-  //   let res = new Circle(this.center.x, this.center.y, this.rad);
-  //   res.objects = [];
-  //   res.objects = this.objects.map(e => e.clone());
-  //   res.color = this.color.clone();
-  //   for (let i in CONFIG) {
-  //     res[i] = this[i];
-  //   }
-  //   return res;
-  // }
 }
 
 export { Circle };

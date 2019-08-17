@@ -21,6 +21,10 @@
 
     let shapes = {};
     let fig;
+    let figs;
+    let eass;
+    let btn1;
+    let btn2;
 
     function init() {
       shapes['p1'] = new Dot(30, 40);
@@ -40,47 +44,78 @@
       fig = shapes['circ'].clone();
     }
 
+    function fancyTransition() {
+      let arr = [ 'rec', 'tri', 'path', 'p1', 'lin', 'star', 'circ' ];
+
+      btn1.elt.disabled = true;
+      btn2.elt.disabled = true;
+
+      // let arr = [ 'rec', 'tri', 'path', 'p1' ];
+
+      let f = (pos) => {
+        if ( pos < arr.length ) {
+          let fig1 = shapes[ arr[pos] ];
+          let dur = +speedSlider.value();
+          return Animator.play(Transform( fig, fig1, dur, 'softBounce' )).
+            then(() => Animator.wait()).
+            then(() => f(pos + 1));
+        } else {
+          // console.log('LALALA');
+          btn1.elt.disabled = false;
+          btn2.elt.disabled = false;
+        }
+      };
+
+      f(0);
+    }
+
     function setup() {
       createCanvas(1500, 700);
 
       createP('');
 
-      let btn = createButton('Animate');
+      figs = [ 'p1', 'p2', 'circ', 'rec', 'tri', 'path', 'lin', 'star' ];
+      eass = [ 'linear', 'easeIn', 'easeOut', 'easeInOut', 'bounce', 'softBounce' ];
+
+      btn1 = createButton('Animate');
+      btn2 = createButton('Animate reverse');
+
       let speedSlider;
 
-      btn.mousePressed(() => {
-        let arr = [ 'rec', 'tri', 'path', 'p1', 'lin', 'star', 'circ' ];
-        btn.elt.disabled = true;
+      let __animate = function(f1, f2, dur, easing) {
+        btn1.elt.disabled = true;
+        btn2.elt.disabled = true;
+        fig = shapes[ f1 ].clone();
+        Animator.play( Transform( fig, shapes[ f2 ], dur, easing ) ).
+          then(() => btn1.elt.disabled = btn2.elt.disabled = false);
+      };
 
-        // let arr = [ 'rec', 'tri', 'path', 'p1' ];
+      btn1.mousePressed(() => {
+        __animate( from.value(), to.value(), +speedSlider.value(), easingSelect.value() );
+      });
 
-        let f = (pos) => {
-          if ( pos < arr.length ) {
-            let fig1 = shapes[ arr[pos] ];
-            let dur = +speedSlider.value();
-            return Animator.play(Transform( fig, fig1, dur )).
-              then(() => Animator.wait()).
-              then(() => f(pos + 1));
-          } else {
-            // console.log('LALALA');
-            btn.elt.disabled = false;
-          }
-        };
-
-        f(0);
-
+      btn2.mousePressed(() => {
+        __animate( to.value(), from.value(), +speedSlider.value(), easingSelect.value() );
       });
 
       speedSlider = createSlider(100, 50000, 1000, 100);
 
       let from = createSelect();
       let to = createSelect();
-      let opts = ['p1', 'p2', 'circ', 'rec', 'tri', 'path', 'lin'];
+      let easingSelect = createSelect();
 
-      for (let i = 0, maxi = opts.length; i < maxi; i += 1) {
-        from.option( opts[i] );
-        to.option( opts[i] );
-      }
+      figs.forEach((e) => { from.option( e ), to.option( e ) });
+      eass.forEach((e) => { easingSelect.option( e ) });
+
+      // for (let i = 0, maxi = figs.length; i < maxi; i += 1) {
+      //   from.option( figs[i] );
+      //   to.option( figs[i] );
+      // }
+
+      // for (let i = 0, maxi = figs.length; i < maxi; i += 1) {
+      //   from.option( opts[i] );
+      //   to.option( opts[i] );
+      // }
 
       let reset = createButton('Reset');
       reset.mousePressed(init);

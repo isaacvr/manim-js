@@ -10,7 +10,6 @@ class Dot extends Path {
   constructor(x, y, z, col) {
     super([], col);
     this.loadConfig(CONFIG);
-    // this.color.a = 1;
     this.objects = [
       new Point(x, y, z)
     ];
@@ -28,14 +27,6 @@ class Dot extends Path {
     return this.objects[0].z;
   }
 
-  // clone() {
-  //   // let pt = this.objects[0];
-  //   let dt = new Dot();
-  //   dt.objects.length = 0;
-  //   dt.objects = this.objects.map(e => e.clone());
-  //   dt.color = this.color.clone();
-  //   return dt;
-  // }
 }
 
 export { Dot };

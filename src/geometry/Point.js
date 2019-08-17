@@ -1,4 +1,4 @@
-import { getPath } from '../utils/paths';
+import { getEasing } from '../utils/easing';
 import { clip } from '../utils/math';
 
 class Point {
@@ -81,7 +81,7 @@ class Point {
   }
 
   interpolate(p1, alpha, interp) {
-    let intp = (typeof interp === 'function') ? interp : getPath(interp);
+    let intp = (typeof interp === 'function') ? interp : getEasing(interp);
     let np = intp(this, p1, clip(alpha, 0, 1));
     this.x = np.x;
     this.y = np.y;
