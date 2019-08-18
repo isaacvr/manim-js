@@ -16,6 +16,10 @@ function clip(val, a, b) {
   return max( a, min(val, b) );
 }
 
+function abs(x) {
+  return Math.abs(x);
+}
+
 function max() {
   return Math.max.apply(null, arguments);
 }
@@ -37,7 +41,7 @@ function sin(x) {
 }
 
 function sinc(x) {
-  if ( Math.abs(x) > 1e-9 ) {
+  if ( abs(x) > 1e-9 ) {
     return sin(x) / x;
   }
   return 1;
@@ -109,6 +113,7 @@ export {
   fastRoot,
   clip,
   sigmoid,
+  abs,
   max,
   min,
   exp,

@@ -1,31 +1,30 @@
-import { interpolate } from './bezier';
 import { sin, exp, sinc } from './math';
 
 const PI = Math.PI;
 const PI_2 = PI / 2;
 
-function linear(start, end, alpha) {
-  return interpolate(start, end, alpha);
+function linear(alpha) {
+  return alpha;
 }
 
-function easeIn(start, end, alpha) {
-  return interpolate(start, end, 1 - sin( (alpha + 1) * PI_2));
+function easeIn(alpha) {
+  return 1 - sin( (alpha + 1) * PI_2);
 }
 
-function easeOut(start, end, alpha) {
-  return interpolate(start, end, sin( alpha * PI_2));
+function easeOut(alpha) {
+  return sin( alpha * PI_2);
 }
 
-function easeInOut(start, end, alpha) {
-  return interpolate(start, end, (sin( (alpha * 2 + 3) * PI_2 ) + 1) / 2);
+function easeInOut(alpha) {
+  return (sin( (alpha * 2 + 3) * PI_2 ) + 1) / 2;
 }
 
-function bounce(start, end, alpha) {
-  return interpolate(start, end, 1 - sinc(4 * PI * alpha) * exp( -3 * alpha ) );
+function bounce(alpha) {
+  return 1 - sinc(4 * PI * alpha) * exp( -4 * alpha );
 }
 
-function softBounce(start, end, alpha) {
-  return interpolate(start, end, 1 - sinc(3 * PI * alpha) * exp( -3 * alpha ) );
+function softBounce(alpha) {
+  return 1 - sinc(3 * PI * alpha) * exp( -3 * alpha );
 }
 
 function getEasing(easing) {

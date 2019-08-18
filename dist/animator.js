@@ -1,15 +1,6 @@
 (function () {
   'use strict';
 
-  function interpolate(start, end, alpha) {
-    if ( typeof start === 'number' ) {
-      return start * (1 - alpha) + end * alpha;
-    } else if ( typeof start.mul === 'function' ) {
-      return start.mul(1 - alpha).add( end.mul(alpha) );
-    }
-    return start.interpolate(end, alpha);
-  }
-
   /**
    *
    * @param { number } n
@@ -19,6 +10,10 @@
 
   function clip(val, a, b) {
     return max( a, min(val, b) );
+  }
+
+  function abs(x) {
+    return Math.abs(x);
   }
 
   function max() {
@@ -42,37 +37,49 @@
   }
 
   function sinc(x) {
-    if ( Math.abs(x) > 1e-9 ) {
+    if ( abs(x) > 1e-9 ) {
       return sin(x) / x;
     }
     return 1;
   }
 
+  function cos(x) {
+    return Math.cos(x);
+  }
+
+  function tan(x) {
+    return Math.tan(x);
+  }
+
+  function sqrt(x) {
+    return Math.sqrt(x);
+  }
+
   const PI = Math.PI;
   const PI_2 = PI / 2;
 
-  function linear(start, end, alpha) {
-    return interpolate(start, end, alpha);
+  function linear(alpha) {
+    return alpha;
   }
 
-  function easeIn(start, end, alpha) {
-    return interpolate(start, end, 1 - sin( (alpha + 1) * PI_2));
+  function easeIn(alpha) {
+    return 1 - sin( (alpha + 1) * PI_2);
   }
 
-  function easeOut(start, end, alpha) {
-    return interpolate(start, end, sin( alpha * PI_2));
+  function easeOut(alpha) {
+    return sin( alpha * PI_2);
   }
 
-  function easeInOut(start, end, alpha) {
-    return interpolate(start, end, (sin( (alpha * 2 + 3) * PI_2 ) + 1) / 2);
+  function easeInOut(alpha) {
+    return (sin( (alpha * 2 + 3) * PI_2 ) + 1) / 2;
   }
 
-  function bounce(start, end, alpha) {
-    return interpolate(start, end, 1 - sinc(4 * PI * alpha) * exp( -3 * alpha ) );
+  function bounce(alpha) {
+    return 1 - sinc(4 * PI * alpha) * exp( -4 * alpha );
   }
 
-  function softBounce(start, end, alpha) {
-    return interpolate(start, end, 1 - sinc(3 * PI * alpha) * exp( -3 * alpha ) );
+  function softBounce(alpha) {
+    return 1 - sinc(3 * PI * alpha) * exp( -3 * alpha );
   }
 
   function getEasing(easing) {
@@ -99,32 +106,83 @@
     return linear;
   }
 
+  function straight_path(A, B, alpha) {
+    if ( typeof A === 'number' ) {
+      return A * (1 - alpha) + B * alpha;
+    } else if ( A.mul ) {
+      return A.mul(1 - alpha).add( B.mul(alpha) );
+    }
+
+    return B;
+  }
+
+  function arc_path(A, B, alpha, arc_angle = Math.PI / 3) {
+    if ( typeof A === 'number' ) {
+      return straight_path(A, B, alpha);
+    }
+    let center = A.mid(B);
+    let cvector = center.sub(A).rotate(Math.PI / 2).div( tan( arc_angle / 2 ) );
+    let Cx = center.add(cvector);
+    let CA = A.sub( Cx );
+    let res = CA.rotate( arc_angle * alpha ).add(Cx);
+    return res;
+  }
+
+  function getPath(name) {
+    switch( name ) {
+      case 'straight_path': {
+        return straight_path;
+      }
+      case 'arc_path': {
+        return arc_path;
+      }
+    }
+
+    return straight_path;
+  }
+
   class Point {
 
     constructor(X, Y, Z) {
       if ( X instanceof Point ) {
-        this.x = X.x;
-        this.y = X.y;
-        this.z = X.z;
+        // console.log("Copy from point");
+        this.copyFromPoint(X);
+      } else if ( Array.isArray(X) ) {
+        // console.log("Copy from array");
+        this.copyFromArray(X);
       } else {
+        // console.log("Copy from raw: ", X, Y, Z);
         this.x = X || 0;
         this.y = Y || 0;
         this.z = Z || 0;
       }
     }
 
-    static fromPolar(abs, arg) {
-      let tAbs = Math.abs(abs);
-      let x = tAbs * Math.cos(arg);
-      let y = tAbs * Math.sin(arg);
+    copyFromPoint(pt) {
+      this.x = pt.x;
+      this.y = pt.y;
+      this.z = pt.z;
+    }
+
+    copyFromArray(arr) {
+      this.x = arr[0] || 0;
+      this.y = arr[1] || 0;
+      this.z = arr[2] || 0;
+    }
+
+    static fromPolar(len, arg) {
+      let tAbs = abs(len);
+      let x = tAbs * cos(arg);
+      let y = tAbs * sin(arg);
+      // console.log(len, arg, x, y);
       return new Point(x, y, 0);
     }
 
-    static fromSpherical(abs, theta, phi) {
-      let tAbs = Math.abs(abs);
-      let x = tAbs * Math.sin(theta) * Math.cos(phi);
-      let y = tAbs * Math.sin(theta) * Math.sin(phi);
-      let z = tAbs * Math.cos(theta);
+    static fromSpherical(len, theta, phi) {
+      let tAbs = abs(len);
+      let x = tAbs * sin(theta) * cos(phi);
+      let y = tAbs * sin(theta) * sin(phi);
+      let z = tAbs * cos(theta);
       return new Point(x, y, z);
     }
 
@@ -160,7 +218,7 @@
     }
 
     abs() {
-      return Math.sqrt( this.dot(this) );
+      return sqrt( this.dot(this) );
     }
 
     angleTo(p) {
@@ -168,6 +226,21 @@
       let l2 = p.abs();
       let cr = this.dot(p);
       return Math.acos( cr / (l1 * l2) );
+    }
+
+    comp() {
+      return new Point(this.x, -this.y, this.z);
+    }
+
+    rotate(ang, deg) {
+      let angle = ang;
+      if ( deg ) {
+        angle = angle * Math.PI / 180;
+      }
+      let rotor = Point.fromPolar(1, angle);
+      let nx = this.x * rotor.x - this.y * rotor.y;
+      let ny = this.x * rotor.y + rotor.x * this.y;
+      return new Point(nx, ny, this.z);
     }
 
     mid(p) {
@@ -178,9 +251,10 @@
       return new Point(this.x, this.y, this.z);
     }
 
-    interpolate(p1, alpha, interp) {
-      let intp = (typeof interp === 'function') ? interp : getEasing(interp);
-      let np = intp(this, p1, clip(alpha, 0, 1));
+    interpolate(p1, alpha, easing, path, arg) {
+      let easingType = (typeof easing === 'function') ? easing : getEasing( easing );
+      let pathType = (typeof path === 'function') ? path : getPath( path );
+      let np = pathType(this, p1, easingType( alpha ), arg);
       this.x = np.x;
       this.y = np.y;
       this.z = np.z;
@@ -351,13 +425,15 @@
       }
     }
 
-    interpolate(col, alpha, interp) {
-      let intp = (typeof interp === 'function') ? interp : getEasing(interp);
-      let alp = clip(alpha, 0, 1);
-      this.r = adjust( intp(this.r, col.r, alp) );
-      this.g = adjust( intp(this.g, col.g, alp) );
-      this.b = adjust( intp(this.b, col.b, alp) );
-      this.a = intp(this.a, col.a, alp);
+    interpolate(col, alpha, easing) {
+      let pathType = getPath('straight_path');
+      let easingType = ( typeof easing === 'function' ) ? easing : getEasing(easing);
+      // let alp = clip(alpha, 0, 1);
+      // let alp = alpha;
+      this.r = adjust( pathType(this.r, col.r, easingType(alpha)) );
+      this.g = adjust( pathType(this.g, col.g, easingType(alpha)) );
+      this.b = adjust( pathType(this.b, col.b, easingType(alpha)) );
+      this.a = pathType(this.a, col.a, easingType(alpha));
       return this;
     }
 
@@ -467,25 +543,26 @@
       return this.objects.length;
     }
 
-    interpolate(p1, alpha, interp) {
-      let len = Math.min( this.length(), p1.length() );
+    interpolate(p1, alpha, easing, path, ang) {
+      let len = min( this.length(), p1.length() );
       for (let i = 0; i < len; i += 1) {
-        this.objects[i].interpolate( p1.objects[i], alpha, interp );
+        this.objects[i].interpolate( p1.objects[i], alpha, easing, path, ang );
       }
-      this.color.interpolate(p1.color, alpha, interp);
-      this.border_color.interpolate(p1.border_color, alpha, interp);
+      this.color.interpolate(p1.color, alpha, easing);
+      this.border_color.interpolate(p1.border_color, alpha, easing);
       // console.log('INTERPOLATION DONE: ', alpha);
       return this;
     }
 
-    interpolateBetween(p1, p2, alpha, interp) {
+    interpolateBetween(p1, p2, alpha, easing, path, arg) {
       // console.log('itbw: ', this.length(), p1.length(), p2.length());
-      let len = Math.min( this.length(), p1.length(), p2.length() );
+      let len = min( this.length(), p1.length(), p2.length() );
       for (let i = 0; i < len; i += 1) {
-        this.objects[i] = p1.objects[i].clone().interpolate( p2.objects[i], alpha, interp );
+        this.objects[i] = p1.objects[i].clone().
+          interpolate( p2.objects[i], alpha, easing, path, arg );
       }
-      this.color = p1.color.clone().interpolate(p2.color, alpha, interp);
-      this.border_color = p1.border_color.clone().interpolate(p2.border_color, alpha, interp);
+      this.color = p1.color.clone().interpolate(p2.color, alpha, easing);
+      this.border_color = p1.border_color.clone().interpolate(p2.border_color, alpha, easing);
       // console.log('INTERPOLATION DONE: ', alpha);
       return this;
     }
@@ -494,8 +571,8 @@
       // console.log('P1: ', p1);
       let lt = p1.length();
       let lf = this.length();
-      this.fill_with_n_objects(Math.max(0, lt - lf ) );
-      p1.fill_with_n_objects(Math.max(0, lf - lt ) );
+      this.fill_with_n_objects( max(0, lt - lf ) );
+      p1.fill_with_n_objects( max(0, lf - lt ) );
     }
 
     fill_with_n_objects(cant) {
@@ -525,7 +602,7 @@
 
       for (let i = 0; i < len; i += 1) {
         newObjects.push( this.objects[i].clone() );
-        let dt = 1 / Math.max(1, cants[i]);
+        let dt = 1 / max(1, cants[i]);
         let next = this.objects[ (i + 1) % len ];
 
         for (let j = 1; j < cants[i]; j += 1) {
@@ -722,6 +799,15 @@
 
   }
 
+  function interpolate(start, end, alpha) {
+    if ( typeof start === 'number' ) {
+      return start * (1 - alpha) + end * alpha;
+    } else if ( typeof start.mul === 'function' ) {
+      return start.mul(1 - alpha).add( end.mul(alpha) );
+    }
+    return start.interpolate(end, alpha);
+  }
+
   const CONFIG$6 = {
     rad_long: 10,
     rad_short: 6,
@@ -839,23 +925,31 @@
   }
 
   const CONFIG$8 = {
-    easing: 'linear'
+    easing: 'linear',
+    path: 'straight_path'
   };
 
   class Transform extends Animation {
-    constructor(object, target, duration, easing) {
+    constructor(object, target, duration, easing, path, arg) {
       super(object);
       this.loadConfig(CONFIG$8);
       this.target = target;
       this.duration = duration || this.duration;
       this.easing = easing || this.easing;
+      this.path = path || this.path;
+      this.arg = arg || this.arg;
       this.init_easing();
+      this.init_path();
       // console.log(this.duration);
       // console.log(this.object, this.target);
     }
 
     init_easing() {
       this.easing = getEasing(this.easing);
+    }
+
+    init_path() {
+      this.path = getPath(this.path);
     }
 
     begin() {
@@ -897,7 +991,14 @@
     }
 
     interpolate(alpha) {
-      this.object.interpolateBetween(this.object_copy, this.target_copy, alpha, this.easing);
+      this.object.interpolateBetween(
+        this.object_copy,
+        this.target_copy,
+        alpha,
+        this.easing,
+        this.path,
+        this.arg
+      );
       // this.object.interpolate(this.target_copy, alpha);
     }
   }
@@ -1017,9 +1118,6 @@
 
   window.Animator = Animator;
   window.Color = Color;
-
-  window.Transform = function(object, target, duration, path_func) {
-    return new Transform(object, target, duration, path_func);
-  };
+  window.Transform = Transform;
 
 }());

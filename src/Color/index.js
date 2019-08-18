@@ -1,5 +1,6 @@
 import { types } from '../utils/arrays';
 import { clip } from '../utils/math';
+import { getPath } from '../utils/paths';
 import { getEasing } from '../utils/easing';
 
 function adjust(val) {
@@ -92,13 +93,15 @@ class Color {
     }
   }
 
-  interpolate(col, alpha, interp) {
-    let intp = (typeof interp === 'function') ? interp : getEasing(interp);
-    let alp = clip(alpha, 0, 1);
-    this.r = adjust( intp(this.r, col.r, alp) );
-    this.g = adjust( intp(this.g, col.g, alp) );
-    this.b = adjust( intp(this.b, col.b, alp) );
-    this.a = intp(this.a, col.a, alp);
+  interpolate(col, alpha, easing) {
+    let pathType = getPath('straight_path');
+    let easingType = ( typeof easing === 'function' ) ? easing : getEasing(easing);
+    // let alp = clip(alpha, 0, 1);
+    // let alp = alpha;
+    this.r = adjust( pathType(this.r, col.r, easingType(alpha)) );
+    this.g = adjust( pathType(this.g, col.g, easingType(alpha)) );
+    this.b = adjust( pathType(this.b, col.b, easingType(alpha)) );
+    this.a = pathType(this.a, col.a, easingType(alpha));
     return this;
   }
 

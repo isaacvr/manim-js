@@ -1,6 +1,7 @@
 import { Point } from './Point';
 import { Color } from '../Color';
 import { range, sum, equal } from '../utils/arrays';
+import { max, min } from '../utils/math';
 
 const CONFIG = {
   closed: false,
@@ -90,25 +91,26 @@ class Path {
     return this.objects.length;
   }
 
-  interpolate(p1, alpha, interp) {
-    let len = Math.min( this.length(), p1.length() );
+  interpolate(p1, alpha, easing, path, ang) {
+    let len = min( this.length(), p1.length() );
     for (let i = 0; i < len; i += 1) {
-      this.objects[i].interpolate( p1.objects[i], alpha, interp );
+      this.objects[i].interpolate( p1.objects[i], alpha, easing, path, ang );
     }
-    this.color.interpolate(p1.color, alpha, interp);
-    this.border_color.interpolate(p1.border_color, alpha, interp);
+    this.color.interpolate(p1.color, alpha, easing);
+    this.border_color.interpolate(p1.border_color, alpha, easing);
     // console.log('INTERPOLATION DONE: ', alpha);
     return this;
   }
 
-  interpolateBetween(p1, p2, alpha, interp) {
+  interpolateBetween(p1, p2, alpha, easing, path, arg) {
     // console.log('itbw: ', this.length(), p1.length(), p2.length());
-    let len = Math.min( this.length(), p1.length(), p2.length() );
+    let len = min( this.length(), p1.length(), p2.length() );
     for (let i = 0; i < len; i += 1) {
-      this.objects[i] = p1.objects[i].clone().interpolate( p2.objects[i], alpha, interp );
+      this.objects[i] = p1.objects[i].clone().
+        interpolate( p2.objects[i], alpha, easing, path, arg );
     }
-    this.color = p1.color.clone().interpolate(p2.color, alpha, interp);
-    this.border_color = p1.border_color.clone().interpolate(p2.border_color, alpha, interp);
+    this.color = p1.color.clone().interpolate(p2.color, alpha, easing);
+    this.border_color = p1.border_color.clone().interpolate(p2.border_color, alpha, easing);
     // console.log('INTERPOLATION DONE: ', alpha);
     return this;
   }
@@ -117,8 +119,8 @@ class Path {
     // console.log('P1: ', p1);
     let lt = p1.length();
     let lf = this.length();
-    this.fill_with_n_objects(Math.max(0, lt - lf ) );
-    p1.fill_with_n_objects(Math.max(0, lf - lt ) );
+    this.fill_with_n_objects( max(0, lt - lf ) );
+    p1.fill_with_n_objects( max(0, lf - lt ) );
   }
 
   fill_with_n_objects(cant) {
@@ -148,7 +150,7 @@ class Path {
 
     for (let i = 0; i < len; i += 1) {
       newObjects.push( this.objects[i].clone() );
-      let dt = 1 / Math.max(1, cants[i]);
+      let dt = 1 / max(1, cants[i]);
       let next = this.objects[ (i + 1) % len ];
 
       for (let j = 1; j < cants[i]; j += 1) {

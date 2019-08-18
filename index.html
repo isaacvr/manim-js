@@ -28,7 +28,7 @@
 
     function init() {
       shapes['p1'] = new Dot(30, 40);
-      shapes['p2'] = new Dot(-40, 80);
+      shapes['p2'] = new Dot(-400, 80);
       shapes['circ'] = new Circle(0, 0, 200);
       shapes['rec'] = new Rectangle(-250, -90, 500, 180);
       shapes['tri'] = new Triangle(50, -160, 410, 20, 151, 89);
@@ -41,7 +41,8 @@
       ]);
       shapes['lin'] = new Line(new Point(-200, 230), new Point(40, -30));
       shapes['star'] = new Star(0, 0, 6, 190, 70);
-      fig = shapes['circ'].clone();
+      // fig = shapes['circ'].clone();
+      fig = shapes['p1'].clone();
     }
 
     function fancyTransition() {
@@ -56,7 +57,7 @@
         if ( pos < arr.length ) {
           let fig1 = shapes[ arr[pos] ];
           let dur = +speedSlider.value();
-          return Animator.play(Transform( fig, fig1, dur, 'softBounce' )).
+          return Animator.play(new Transform( fig, fig1, dur, 'softBounce' )).
             then(() => Animator.wait()).
             then(() => f(pos + 1));
         } else {
@@ -82,20 +83,24 @@
 
       let speedSlider;
 
-      let __animate = function(f1, f2, dur, easing) {
+      let __animate = function(f1, f2) {
+        let dur = speedSlider.value();
+        let easing = easingSelect.value();
+        let path = pathSelect.value();
+        let arg = Math.PI / 2;
         btn1.elt.disabled = true;
         btn2.elt.disabled = true;
         fig = shapes[ f1 ].clone();
-        Animator.play( Transform( fig, shapes[ f2 ], dur, easing ) ).
-          then(() => btn1.elt.disabled = btn2.elt.disabled = false);
+        Animator.play( new Transform( fig, shapes[ f2 ], dur, easing, path, arg ) ).
+          then(() => { btn1.elt.disabled = btn2.elt.disabled = false; });
       };
 
       btn1.mousePressed(() => {
-        __animate( from.value(), to.value(), +speedSlider.value(), easingSelect.value() );
+        __animate( from.value(), to.value() );
       });
 
       btn2.mousePressed(() => {
-        __animate( to.value(), from.value(), +speedSlider.value(), easingSelect.value() );
+        __animate( to.value(), from.value() );
       });
 
       speedSlider = createSlider(100, 50000, 1000, 100);
@@ -103,9 +108,18 @@
       let from = createSelect();
       let to = createSelect();
       let easingSelect = createSelect();
+      let pathSelect = createSelect();
 
       figs.forEach((e) => { from.option( e ), to.option( e ) });
       eass.forEach((e) => { easingSelect.option( e ) });
+
+      from.selected('path');
+      to.selected('rec');
+      easingSelect.selected('bounce');
+      // console.log(to);
+
+      pathSelect.option('straight_path');
+      pathSelect.option('arc_path');
 
       // for (let i = 0, maxi = figs.length; i < maxi; i += 1) {
       //   from.option( figs[i] );
@@ -128,7 +142,7 @@
       if ( f instanceof Dot ) {
         stroke(f.color.toHex());
         strokeWeight(8);
-        point(f.x, f.y);
+        point(f.x, -f.y);
         return;
       }
 
@@ -147,7 +161,7 @@
       strokeWeight(str || 3);
 
       for (let i = 0; i < len; i += 1) {
-        vertex(objs[i].x, objs[i].y);
+        vertex(objs[i].x, -objs[i].y);
       }
 
       endShape(( f.closed ) ? CLOSE : null);
@@ -157,6 +171,7 @@
       background(0);
       translate(width >> 1, height >> 1);
       drawFigure(fig);
+      drawFigure(shapes['p2']);
     }
 
   </script>

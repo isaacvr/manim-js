@@ -16,7 +16,4 @@ for (let i = 0; i < k.length; i += 1) {
 
 window.Animator = Animator;
 window.Color = Color;
-
-window.Transform = function(object, target, duration, path_func) {
-  return new Transform(object, target, duration, path_func);
-};
+window.Transform = Transform;

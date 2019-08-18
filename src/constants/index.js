@@ -14,9 +14,6 @@ const ANIMATION_LAG_RATIO = 0;
 
 const DEFAULT_WAIT = 1000;
 
-const PI = 3.141592653589793;
-const TAU = PI * 2;
-
 export {
   UP,
   DOWN,
@@ -27,7 +24,5 @@ export {
   CIRCLE_POINTS,
   ANIMATION_DURATION,
   ANIMATION_LAG_RATIO,
-  DEFAULT_WAIT,
-  PI,
-  TAU
+  DEFAULT_WAIT
 };

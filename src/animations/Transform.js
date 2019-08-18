@@ -1,25 +1,34 @@
 import { Animation } from './Animation';
 import { getEasing } from '../utils/easing';
 import { Dot } from '../geometry/Dot';
+import { getPath } from '../utils/paths';
 
 const CONFIG = {
-  easing: 'linear'
+  easing: 'linear',
+  path: 'straight_path'
 };
 
 class Transform extends Animation {
-  constructor(object, target, duration, easing) {
+  constructor(object, target, duration, easing, path, arg) {
     super(object);
     this.loadConfig(CONFIG);
     this.target = target;
     this.duration = duration || this.duration;
     this.easing = easing || this.easing;
+    this.path = path || this.path;
+    this.arg = arg || this.arg;
     this.init_easing();
+    this.init_path();
     // console.log(this.duration);
     // console.log(this.object, this.target);
   }
 
   init_easing() {
     this.easing = getEasing(this.easing);
+  }
+
+  init_path() {
+    this.path = getPath(this.path);
   }
 
   begin() {
@@ -61,7 +70,14 @@ class Transform extends Animation {
   }
 
   interpolate(alpha) {
-    this.object.interpolateBetween(this.object_copy, this.target_copy, alpha, this.easing);
+    this.object.interpolateBetween(
+      this.object_copy,
+      this.target_copy,
+      alpha,
+      this.easing,
+      this.path,
+      this.arg
+    );
     // this.object.interpolate(this.target_copy, alpha);
   }
 }
