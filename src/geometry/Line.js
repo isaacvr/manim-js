@@ -1,5 +1,4 @@
 import { Path } from './Path';
-import { Point } from './Point';
 
 const CONFIG = {
   closed: false,
@@ -8,35 +7,26 @@ const CONFIG = {
 
 class Line extends Path {
   constructor(a, b, col) {
-    super([], col);
+    let ini = ( Array.isArray(a) ) ? [ a[0], a[1], a[2] ] : [ 0, 0, 0 ];
+    let fin = ( Array.isArray(b) ) ? [ b[0], b[1], b[2] ] : [ 0, 0, 0 ];
+    super([ ini, fin ], col);
     this.loadConfig(CONFIG);
-    this.objects = [];
-    this.objects[0] = (a instanceof Point) ? a.clone() : new Point();
-    this.objects[1] = (b instanceof Point) ? b.clone() : new Point();
   }
 
   get p1() {
-    return this.objects[0];
+    return this.objects.slice([0, 1]);
   }
 
-  set p1(p) {
-    this.objects[0] = p.clone();
-  }
+  // set p1(p) {
+  //   this.objects[0] = p.clone();
+  // }
 
   get p2() {
-    return this.objects[1];
+    return this.objects.slice([1, 2]);
   }
 
-  set p2(p) {
-    this.objects[1] = p.clone();
-  }
-
-  // clone() {
-  //   let res = new Line();
-  //   res.objects.length = 0;
-  //   res.objects = this.objects.map(e => e.clone());
-  //   res.color = this.color.clone();
-  //   return res;
+  // set p2(p) {
+  //   this.objects[1] = p.clone();
   // }
 }
 

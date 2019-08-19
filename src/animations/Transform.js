@@ -24,10 +24,12 @@ class Transform extends Animation {
   }
 
   init_easing() {
+    // console.log('EASING: ', this.easing);
     this.easing = getEasing(this.easing);
   }
 
   init_path() {
+    // console.log('PATH: ', this.easing);
     this.path = getPath(this.path);
   }
 
@@ -45,9 +47,12 @@ class Transform extends Animation {
       this.object.__proto__ = this.target.__proto__;
     }
 
-    if ( !this.target.closed ) {
-      this.object.closed = this.target.closed;
-    }
+    // if ( !this.target.closed ) {
+    // this.object.closed = this.target.closed;
+    // }
+
+    this.object.closed = true;
+
     if ( this.target.filled ) {
       this.object.filled = this.target.filled;
     }

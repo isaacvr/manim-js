@@ -1,6 +1,31 @@
 (function () {
   'use strict';
 
+  function types(arr) {
+    let res = [];
+
+    for (let i = 0, maxi = arr.length; i < maxi; i += 1) {
+      if ( Array.isArray(arr[i]) ) {
+        res.push('a');
+      } else switch( typeof arr[i] ) {
+        case 'number':
+        case 'string':
+        case 'object':
+        case 'undefined':
+        case 'function': {
+          res.push( ( typeof arr[i] )[0] );
+          break;
+        }
+        default: {
+          res.push('?');
+          break;
+        }
+      }
+    }
+
+    return res.join('');
+  }
+
   /**
    *
    * @param { number } n
@@ -43,16 +68,59 @@
     return 1;
   }
 
-  function cos(x) {
-    return Math.cos(x);
-  }
-
   function tan(x) {
     return Math.tan(x);
   }
 
-  function sqrt(x) {
-    return Math.sqrt(x);
+  function euclidMCD(a, b) {
+    return ( b == 0 ) ? a : euclidMCD(b, a % b);
+  }
+
+  function rotationMatrix(ang) {
+    let mat = [
+      [ Math.cos(ang), Math.sin(ang), 0],
+      [ Math.sin(-ang), Math.cos(ang), 0],
+      [ 0, 0, 1]
+    ];
+
+    return nj.array(mat);
+  }
+
+  function straight_path(A, B, alpha) {
+    if ( typeof A === 'number' ) {
+      return A * (1 - alpha) + B * alpha;
+    } else if ( A.multiply ) {
+      return A.multiply(1 - alpha).add( B.multiply(alpha) );
+    }
+
+    return B;
+  }
+
+  function arc_path(A, B, alpha, arc_angle = Math.PI / 3) {
+    if ( typeof A === 'number' ) {
+      return straight_path(A, B, alpha);
+    }
+    let center = A.add(B).divide(2);
+    // console.log('DOT: ', center.shape, [3, 3]);
+    let cvector = center.subtract(A).dot(rotationMatrix(Math.PI / 2)).divide( tan( arc_angle / 2 ) );
+    let Cx = center.add(cvector);
+    let CA = A.subtract( Cx );
+    // console.log('DOT: ', CA.shape, [ 3, 3 ]);
+    let res = CA.dot( rotationMatrix( arc_angle * alpha ) ).add(Cx);
+    return res;
+  }
+
+  function getPath(name) {
+    switch( name ) {
+      case 'straight_path': {
+        return straight_path;
+      }
+      case 'arc_path': {
+        return arc_path;
+      }
+    }
+
+    return straight_path;
   }
 
   const PI = Math.PI;
@@ -104,235 +172,6 @@
       }
     }
     return linear;
-  }
-
-  function straight_path(A, B, alpha) {
-    if ( typeof A === 'number' ) {
-      return A * (1 - alpha) + B * alpha;
-    } else if ( A.mul ) {
-      return A.mul(1 - alpha).add( B.mul(alpha) );
-    }
-
-    return B;
-  }
-
-  function arc_path(A, B, alpha, arc_angle = Math.PI / 3) {
-    if ( typeof A === 'number' ) {
-      return straight_path(A, B, alpha);
-    }
-    let center = A.mid(B);
-    let cvector = center.sub(A).rotate(Math.PI / 2).div( tan( arc_angle / 2 ) );
-    let Cx = center.add(cvector);
-    let CA = A.sub( Cx );
-    let res = CA.rotate( arc_angle * alpha ).add(Cx);
-    return res;
-  }
-
-  function getPath(name) {
-    switch( name ) {
-      case 'straight_path': {
-        return straight_path;
-      }
-      case 'arc_path': {
-        return arc_path;
-      }
-    }
-
-    return straight_path;
-  }
-
-  class Point {
-
-    constructor(X, Y, Z) {
-      if ( X instanceof Point ) {
-        // console.log("Copy from point");
-        this.copyFromPoint(X);
-      } else if ( Array.isArray(X) ) {
-        // console.log("Copy from array");
-        this.copyFromArray(X);
-      } else {
-        // console.log("Copy from raw: ", X, Y, Z);
-        this.x = X || 0;
-        this.y = Y || 0;
-        this.z = Z || 0;
-      }
-    }
-
-    copyFromPoint(pt) {
-      this.x = pt.x;
-      this.y = pt.y;
-      this.z = pt.z;
-    }
-
-    copyFromArray(arr) {
-      this.x = arr[0] || 0;
-      this.y = arr[1] || 0;
-      this.z = arr[2] || 0;
-    }
-
-    static fromPolar(len, arg) {
-      let tAbs = abs(len);
-      let x = tAbs * cos(arg);
-      let y = tAbs * sin(arg);
-      // console.log(len, arg, x, y);
-      return new Point(x, y, 0);
-    }
-
-    static fromSpherical(len, theta, phi) {
-      let tAbs = abs(len);
-      let x = tAbs * sin(theta) * cos(phi);
-      let y = tAbs * sin(theta) * sin(phi);
-      let z = tAbs * cos(theta);
-      return new Point(x, y, z);
-    }
-
-    static isPoint(p) {
-      return p instanceof Point;
-    }
-
-    add(p) {
-      return new Point(this.x + p.x, this.y + p.y, this.z + p.z);
-    }
-
-    sub(p) {
-      return new Point(this.x - p.x, this.y - p.y, this.z - p.z);
-    }
-
-    mul(s) {
-      return new Point(this.x * s, this.y * s, this.z * s);
-    }
-
-    div(s) {
-      return new Point(this.x / s, this.y / s, this.z / s);
-    }
-
-    dot(p) {
-      return this.x * p.x + this.y * p.y + this.z * p.z;
-    }
-
-    cross(p) {
-      let x1 = ( this.y * p.z - p.y * this.z );
-      let y1 = -( this.x * p.z - p.x * this.z );
-      let z1 = ( this.x * p.y - p.x * this.y );
-      return new Point(x1, y1, z1);
-    }
-
-    abs() {
-      return sqrt( this.dot(this) );
-    }
-
-    angleTo(p) {
-      let l1 = this.abs();
-      let l2 = p.abs();
-      let cr = this.dot(p);
-      return Math.acos( cr / (l1 * l2) );
-    }
-
-    comp() {
-      return new Point(this.x, -this.y, this.z);
-    }
-
-    rotate(ang, deg) {
-      let angle = ang;
-      if ( deg ) {
-        angle = angle * Math.PI / 180;
-      }
-      let rotor = Point.fromPolar(1, angle);
-      let nx = this.x * rotor.x - this.y * rotor.y;
-      let ny = this.x * rotor.y + rotor.x * this.y;
-      return new Point(nx, ny, this.z);
-    }
-
-    mid(p) {
-      return this.add(p).div(2);
-    }
-
-    clone() {
-      return new Point(this.x, this.y, this.z);
-    }
-
-    interpolate(p1, alpha, easing, path, arg) {
-      let easingType = (typeof easing === 'function') ? easing : getEasing( easing );
-      let pathType = (typeof path === 'function') ? path : getPath( path );
-      let np = pathType(this, p1, easingType( alpha ), arg);
-      this.x = np.x;
-      this.y = np.y;
-      this.z = np.z;
-      return this;
-    }
-  }
-
-  function types(arr) {
-    let res = [];
-
-    for (let i = 0, maxi = arr.length; i < maxi; i += 1) {
-      if ( Array.isArray(arr[i]) ) {
-        res.push('a');
-      } else switch( typeof arr[i] ) {
-        case 'number':
-        case 'string':
-        case 'object':
-        case 'undefined':
-        case 'function': {
-          res.push( ( typeof arr[i] )[0] );
-          break;
-        }
-        default: {
-          res.push('?');
-          break;
-        }
-      }
-    }
-
-    return res.join('');
-  }
-
-  function range(a, b, s) {
-
-    let tp = types([a, b, s]);
-    let ini, fin, step;
-
-    if ( tp === 'uuu' ) {
-      throw new ReferenceError('Range expected at least 1 argument, got 0.');
-    } else if ( tp === 'nuu' ) {
-      ini = 0, fin = a, step = 1;
-    } else if ( tp === 'nnu' ) {
-      ini = a, fin = b, step = 1;
-    } else if ( tp === 'nnn' ) {
-      ini = a, fin = b, step = s;
-    } else {
-      return [];
-    }
-
-    if ( step === 0 ) {
-      throw new TypeError('Range step argument must not be zero');
-    }
-
-    if ( (step < 0 && ini <= fin) || (step > 0 && ini >= fin) ) {
-      return [];
-    }
-
-    let ret = [];
-
-    do {
-      ret.push(ini);
-      ini += step;
-    } while( (step < 0 && ini > fin) || (step > 0 && ini < fin) );
-
-    return ret;
-
-  }
-
-  function sum(arr) {
-    let res = 0;
-    for (let i = 0, maxi = arr.length; i < maxi; i += 1) {
-      res += arr[i];
-    }
-    return res;
-  }
-
-  function equal(arr, val) {
-    return arr.map((e) => e === val ? 1 : 0);
   }
 
   function adjust(val) {
@@ -455,6 +294,15 @@
     }
   }
 
+  function interpolate(start, end, alpha, ease, path, arc) {
+    let pathFunc = ( typeof path === 'function' ) ? path : getPath(path);
+    let easingFunc = ( typeof ease === 'function' ) ? ease : getEasing(ease);
+
+    // console.log('PATH: ', pathFunc.name, '  EASE: ', easingFunc.name);
+
+    return pathFunc(start, end, easingFunc(alpha), arc);
+  }
+
   const CONFIG = {
     closed: false,
     filled: false,
@@ -462,21 +310,20 @@
 
   class Path {
     constructor(pts, col) {
-      this.objects = [];
-      this.color = col || new Color();
-      this.border_color = col || new Color();
-
-      this.loadConfig(CONFIG);
-
-      if ( Array.isArray(pts) ) {
+      let arr = [];
+      if ( Array.isArray( pts ) ) {
         for (let i = 0, maxi = pts.length; i < maxi; i += 1) {
-          this.addBack(pts[i]);
+          arr[i] = [];
+          for (let j = 0; j < 3; j += 1) {
+            arr[i][j] = pts[i][j] || 0;
+          }
         }
       }
-    }
 
-    static checkType(p) {
-      return Point.isPoint(p) || ( Array.isArray(p) && p.length >= 2 );
+      this.objects = nj.array( arr );
+      this.color = col || new Color();
+      this.border_color = col || new Color();
+      this.loadConfig(CONFIG);
     }
 
     loadConfig(config) {
@@ -491,37 +338,12 @@
 
     }
 
-    addFront(pt) {
-      if ( Path.checkType(pt) ) {
-        this.objects.unshift(new Point(pt));
-      }
-    }
-
-    addBack(pt) {
-      if ( Path.checkType(pt) ) {
-        this.objects.push(new Point(pt));
-      }
-    }
-
-    popFront() {
-      if ( this.objects.length > 0 ) {
-        this.objects.shift();
-      }
-    }
-
-    popBack() {
-      if ( this.objects.length > 0 ) {
-        this.objects.pop();
-      }
-    }
-
     clear() {
-      this.objects.length = 0;
+      this.objects = nj.array();
     }
 
     clone() {
       // console.log('CLONING: ', this.objects);
-      this.objects;
       let copy = Object.assign({}, this);
 
       copy.__proto__ = this.__proto__;
@@ -530,40 +352,28 @@
       delete copy.color;
       delete copy.border_color;
 
-      copy.objects = this.objects.map(e => e.clone());
+      copy.objects = this.objects.clone();
       copy.color = this.color.clone();
       copy.border_color = this.border_color.clone();
-
-      // console.log('CLONED: ', this.objects, copy.objects);
 
       return copy;
     }
 
     length() {
-      return this.objects.length;
+      return ~~this.objects.shape[0];
     }
 
     interpolate(p1, alpha, easing, path, ang) {
-      let len = min( this.length(), p1.length() );
-      for (let i = 0; i < len; i += 1) {
-        this.objects[i].interpolate( p1.objects[i], alpha, easing, path, ang );
-      }
+      this.objects = interpolate(this.objects, p1.objects, alpha, easing, path, ang);
       this.color.interpolate(p1.color, alpha, easing);
       this.border_color.interpolate(p1.border_color, alpha, easing);
-      // console.log('INTERPOLATION DONE: ', alpha);
       return this;
     }
 
-    interpolateBetween(p1, p2, alpha, easing, path, arg) {
-      // console.log('itbw: ', this.length(), p1.length(), p2.length());
-      let len = min( this.length(), p1.length(), p2.length() );
-      for (let i = 0; i < len; i += 1) {
-        this.objects[i] = p1.objects[i].clone().
-          interpolate( p2.objects[i], alpha, easing, path, arg );
-      }
+    interpolateBetween(p1, p2, alpha, easing, path, ang) {
+      this.objects = interpolate(p1.objects, p2.objects, alpha, easing, path, ang);
       this.color = p1.color.clone().interpolate(p2.color, alpha, easing);
       this.border_color = p1.border_color.clone().interpolate(p2.border_color, alpha, easing);
-      // console.log('INTERPOLATION DONE: ', alpha);
       return this;
     }
 
@@ -571,47 +381,65 @@
       // console.log('P1: ', p1);
       let lt = p1.length();
       let lf = this.length();
-      this.fill_with_n_objects( max(0, lt - lf ) );
-      p1.fill_with_n_objects( max(0, lf - lt ) );
+      let mcd = euclidMCD(lt, lf);
+      let lcm = lt * lf / mcd;
+      let nt = lcm / lt;
+      let nf = lcm / lf;
+      let shouldReverse = p1.closed ^ this.closed;
+      // console.log('BEFORE ---- FROM: ', lf, 'TO: ', lt, nf, nt, lcm);
+      this.fill_with_n_objects( nf, shouldReverse &&  !this.closed );
+      p1.fill_with_n_objects( nt, shouldReverse &&  !p1.closed );
+      // console.log(this.objects.toString());
+      // console.log('AFTER ----- FROM: ', this.length(), 'TO: ', p1.length());
     }
 
-    fill_with_n_objects(cant) {
+    fill_with_n_objects(cant, reversed) {
 
       if ( cant === 0 ) {
         return;
       }
 
-      let len = this.length();
-      let tot = len + cant;
-      let newObjects = [];
-      let cants = (function() {
-        let c = range(tot).map(e => ~~(e * len / tot));
-        let res = [];
-        for (let i = 0; i < len; i += 1) {
-          res.push( sum( equal(c, i) ) );
-        }
-        return res;
-      }());
-
-      if ( len > 1 ) {
-        if ( cants[len - 1] > 1 ) {
-          cants[ len - 2 ] += cants[ len - 1 ] - 1;
-          cants[ len - 1 ] = 1;
-        }
+      if ( !reversed ) {
+        cant *= 2;
       }
+
+      let len = this.length();
+      let temp = [];
 
       for (let i = 0; i < len; i += 1) {
-        newObjects.push( this.objects[i].clone() );
-        let dt = 1 / max(1, cants[i]);
-        let next = this.objects[ (i + 1) % len ];
+        let cur = this.objects.slice([i, i + 1]);
+        temp.push( cur.tolist()[0] );
+        let dt = 1 / max(1, cant);
+        let next = this.objects.slice([ (i + 1) % len, (i + 2) % len ]);
+        let tot = cant;
 
-        for (let j = 1; j < cants[i]; j += 1) {
-          newObjects.push( this.objects[i].clone().interpolate(next, dt * j) );
-          // newObjects.push( this.objects[i].clone() );
+        if ( i + 2 >= len ) {
+          if ( i + 1 >= len ) {
+            break;
+          } else {
+            tot = 2 * cant - 1;
+            dt = 1 / ( cant * 2 );
+            next = this.objects.slice([ len - 1, len ]);
+          }
+        }
+
+        for (let j = 1; j < tot; j += 1) {
+          temp.push( interpolate(cur, next, dt * j).tolist()[0] );
         }
       }
 
-      this.objects = newObjects;
+      let result = [];
+
+      if ( reversed ) {
+        for (let i = temp.length - 1; i >= 0; i -= 1) {
+          result.unshift( temp[i] );
+          result.push( [].concat(temp[i]) );
+        }
+      } else {
+        result = temp;
+      }
+
+      this.objects = nj.array( result );
 
     }
 
@@ -645,23 +473,21 @@
 
   class Dot extends Path {
     constructor(x, y, z, col) {
-      super([], col);
+      super([ [x, y, z] ], col);
       this.loadConfig(CONFIG$1);
-      this.objects = [
-        new Point(x, y, z)
-      ];
+      // console.log('Dot constructor: ', this.objects.get(0, 0));
     }
 
     get x() {
-      return this.objects[0].x;
+      return this.objects.get(0, 0);
     }
 
     get y() {
-      return this.objects[0].y;
+      return this.objects.get(0, 1);
     }
 
     get z() {
-      return this.objects[0].z;
+      return this.objects.get(0, 2);
     }
 
   }
@@ -673,35 +499,26 @@
 
   class Line extends Path {
     constructor(a, b, col) {
-      super([], col);
+      let ini = ( Array.isArray(a) ) ? [ a[0], a[1], a[2] ] : [ 0, 0, 0 ];
+      let fin = ( Array.isArray(b) ) ? [ b[0], b[1], b[2] ] : [ 0, 0, 0 ];
+      super([ ini, fin ], col);
       this.loadConfig(CONFIG$2);
-      this.objects = [];
-      this.objects[0] = (a instanceof Point) ? a.clone() : new Point();
-      this.objects[1] = (b instanceof Point) ? b.clone() : new Point();
     }
 
     get p1() {
-      return this.objects[0];
+      return this.objects.slice([0, 1]);
     }
 
-    set p1(p) {
-      this.objects[0] = p.clone();
-    }
+    // set p1(p) {
+    //   this.objects[0] = p.clone();
+    // }
 
     get p2() {
-      return this.objects[1];
+      return this.objects.slice([1, 2]);
     }
 
-    set p2(p) {
-      this.objects[1] = p.clone();
-    }
-
-    // clone() {
-    //   let res = new Line();
-    //   res.objects.length = 0;
-    //   res.objects = this.objects.map(e => e.clone());
-    //   res.color = this.color.clone();
-    //   return res;
+    // set p2(p) {
+    //   this.objects[1] = p.clone();
     // }
   }
 
@@ -712,29 +529,24 @@
 
   class Triangle extends Path {
     constructor(x1, y1, x2, y2, x3, y3, col) {
-      super([], col);
+      super([
+        [ x1, y1, 0 ],
+        [ x2, y2, 0 ],
+        [ x3, y3, 0 ],
+        [ x1, y1, 0 ],
+      ], col);
       this.loadConfig(CONFIG$3);
-      this.objects = [];
-      if ( Point.isPoint(x1) && Point.isPoint(y1) && Point.isPoint(x2) ) {
-        this.objects.push( x1.clone() );
-        this.objects.push( y1.clone() );
-        this.objects.push( x2.clone() );
-        this.objects.push( x1.clone() );
-      } else {
-        this.objects.push( new Point(x1, y1) );
-        this.objects.push( new Point(x2, y2) );
-        this.objects.push( new Point(x3, y3) );
-        this.objects.push( new Point(x1, y1) );
-      }
     }
   }
 
-  const UP = new Point(0, 1, 0);
-  const DOWN = new Point(0, -1, 0);
-  const LEFT = new Point(-1, 0, 0);
-  const RIGHT = new Point(1, 0, 0);
-  const OUT = new Point(0, 0, -1);
-  const IN = new Point(0, 0, 1);
+  const UP = nj.array([0, 1, 0]);
+  const DOWN = nj.array([0, -1, 0]);
+  const LEFT = nj.array([-1, 0, 0]);
+  const RIGHT = nj.array([1, 0, 0]);
+  const OUT = nj.array([0, 0, -1]);
+  const IN = nj.array([0, 0, 1]);
+
+  const CENTER = nj.array([0, 0, 0]);
 
   const CIRCLE_POINTS = 100;
 
@@ -751,18 +563,19 @@
   class Rectangle extends Path {
 
     constructor(x, y, w, h, col) {
-      super([], col);
+      let p = ( types([x, y]) === 'nn' ) ? nj.array([x, y, 0]) : CENTER;
+      let objs = [];
+      let width = w || 1;
+      let height = h || 1;
+      objs.push( p.clone().tolist() );
+      objs.push( p.add( RIGHT.multiply(w) ).tolist() );
+      objs.push( p.add( RIGHT.multiply(w) ).add( UP.multiply(h) ).tolist() );
+      objs.push( p.add( UP.multiply(h) ).tolist() );
+      objs.push( p.clone().tolist() );
+      super(objs, col);
       this.loadConfig(CONFIG$4);
-      let p = new Point(x, y, 0);
-
-      this.objects = [];
-      this.width = w;
-      this.height = h;
-      this.objects[0] = p.clone();
-      this.objects[1] = p.add( RIGHT.mul(w) );
-      this.objects[2] = p.add( RIGHT.mul(w) ).add( UP.mul(h) );
-      this.objects[3] = p.add( UP.mul(h) );
-      this.objects[4] = p.clone();
+      this.width = width;
+      this.height = height;
     }
 
     get p() {
@@ -780,32 +593,20 @@
     constructor(cx, cy, rad, col) {
       super([], col);
       this.loadConfig(CONFIG$5);
-      this.objects = [];
-      this.center = new Point(cx, cy);
-      this.rad = rad;
+      this.center = ( types([ cx, cy ]) === 'nn' ) ? nj.array([cx, cy, 0]) : CENTER;
+      this.rad = ( types([rad]) === 'n' ) ? rad : 1;
       this.generatePoints();
     }
 
     generatePoints() {
-      this.objects.length = 0;
-      let dt = 2 * Math.PI / CIRCLE_POINTS;
-      for (let i = 0; i < CIRCLE_POINTS; i += 1) {
-        let x = this.center.x + this.rad * Math.cos(i * dt);
-        let y = this.center.y + this.rad * Math.sin(i * dt);
-        this.objects.push(new Point(x, y));
-      }
-      this.objects.push( this.objects[0].clone() );
+      let tau = Math.PI * 2;
+      let angs = nj.linspace(0, tau, CIRCLE_POINTS);
+      let x = nj.cos( angs ).multiply( this.rad ).add( this.center.get(0) );
+      let y = nj.sin( angs ).multiply( this.rad ).add( this.center.get(1) );
+      let z = nj.zeros( CIRCLE_POINTS );
+      this.objects = nj.stack([ x, y, z ]).transpose();
     }
 
-  }
-
-  function interpolate(start, end, alpha) {
-    if ( typeof start === 'number' ) {
-      return start * (1 - alpha) + end * alpha;
-    } else if ( typeof start.mul === 'function' ) {
-      return start.mul(1 - alpha).add( end.mul(alpha) );
-    }
-    return start.interpolate(end, alpha);
   }
 
   const CONFIG$6 = {
@@ -822,7 +623,7 @@
     constructor(cx, cy, cant, rl, rs, col) {
       super([], col);
       this.loadConfig(CONFIG$6);
-      this.center = new Point(cx, cy);
+      this.center = ( types([cx, cy]) === 'nn' ) ? nj.array([cx, cy, 0]) : CENTER;
       this.rad_long = rl || this.rad_long;
       this.rad_short = rs || this.rad_short;
       this.cant = cant || this.cant;
@@ -830,30 +631,26 @@
     }
 
     generatePoints() {
-      this.objects.length = 0;
-
-      let cant = this.cant;
-      let step = Math.PI / cant;
-      let center = this.center;
-      let r1 = this.rad_long;
-      let r2 = this.rad_short;
-      let arg0 = this.init_angle;
-
-      for (let i = 0, j = 0, maxi = cant << 1; i < maxi; i += 1, j = 1 - j) {
-        this.objects.push(
-          center.add(
-            Point.fromPolar(interpolate(r1, r2, j), arg0 + step * i)
-          )
-        );
-      }
-
+      let tau = Math.PI * 2;
+      let total = this.cant * 2;
+      let angs = nj.linspace(0, tau, total + 1).slice([total]);
+      // console.log(angs.toString());
+      let evens = nj.arange( total ).mod(2);
+      let odds = nj.arange( total ).add(1).mod(2);
+      let xe = nj.cos( angs ).multiply( this.rad_short ).add( this.center.get(0) ).multiply( evens );
+      let ye = nj.sin( angs ).multiply( this.rad_short ).add( this.center.get(1) ).multiply( evens );
+      let xo = nj.cos( angs ).multiply( this.rad_long ).add( this.center.get(0) ).multiply( odds );
+      let yo = nj.sin( angs ).multiply( this.rad_long ).add( this.center.get(1) ).multiply( odds );
+      let x = xe.add(xo);
+      let y = ye.add(yo);
+      let z = nj.zeros( total );
+      this.objects = nj.stack([ x, y, z ]).transpose();
     }
   }
 
 
 
   var geometry = /*#__PURE__*/Object.freeze({
-    Point: Point,
     Path: Path,
     Dot: Dot,
     Line: Line,
@@ -945,10 +742,12 @@
     }
 
     init_easing() {
+      // console.log('EASING: ', this.easing);
       this.easing = getEasing(this.easing);
     }
 
     init_path() {
+      // console.log('PATH: ', this.easing);
       this.path = getPath(this.path);
     }
 
@@ -966,9 +765,12 @@
         this.object.__proto__ = this.target.__proto__;
       }
 
-      if ( !this.target.closed ) {
-        this.object.closed = this.target.closed;
-      }
+      // if ( !this.target.closed ) {
+      // this.object.closed = this.target.closed;
+      // }
+
+      this.object.closed = true;
+
       if ( this.target.filled ) {
         this.object.filled = this.target.filled;
       }
@@ -1104,6 +906,22 @@
     //     if self.random_seed is not None:
     //         random.seed(self.random_seed)
     //         np.random.seed(self.random_seed)
+
+  /// Add some stuff to numjs
+
+  nj.linspace = nj.linspace || function linspace(start, stop, elements, dtype) {
+
+    let num = ~~elements;
+
+    if ( num <= 0 ) {
+      return nj.array([], dtype);
+    } else if ( num === 1 ) {
+      return nj.array([start], dtype);
+    }
+
+    return nj.arange(start, stop, (stop - start) / (num - 1), dtype).slice([ num ]);
+
+  };
 
   let k = Object.keys(geometry);
 

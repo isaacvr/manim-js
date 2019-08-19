@@ -1,5 +1,4 @@
 import { Path } from './Path';
-import { Point } from './Point';
 
 const CONFIG = {
   closed: true,
@@ -8,23 +7,21 @@ const CONFIG = {
 
 class Dot extends Path {
   constructor(x, y, z, col) {
-    super([], col);
+    super([ [x, y, z] ], col);
     this.loadConfig(CONFIG);
-    this.objects = [
-      new Point(x, y, z)
-    ];
+    // console.log('Dot constructor: ', this.objects.get(0, 0));
   }
 
   get x() {
-    return this.objects[0].x;
+    return this.objects.get(0, 0);
   }
 
   get y() {
-    return this.objects[0].y;
+    return this.objects.get(0, 1);
   }
 
   get z() {
-    return this.objects[0].z;
+    return this.objects.get(0, 2);
   }
 
 }

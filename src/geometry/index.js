@@ -1,4 +1,3 @@
-import { Point } from './Point';
 import { Dot } from './Dot';
 import { Path } from './Path';
 import { Line } from './Line';
@@ -8,7 +7,6 @@ import { Circle } from './Circle';
 import { Star } from './Star';
 
 export {
-  Point,
   Path,
   Dot,
   Line,

@@ -1,10 +1,13 @@
-function interpolate(start, end, alpha) {
-  if ( typeof start === 'number' ) {
-    return start * (1 - alpha) + end * alpha;
-  } else if ( typeof start.mul === 'function' ) {
-    return start.mul(1 - alpha).add( end.mul(alpha) );
-  }
-  return start.interpolate(end, alpha);
+import { getPath } from "./paths";
+import { getEasing } from "./easing";
+
+function interpolate(start, end, alpha, ease, path, arc) {
+  let pathFunc = ( typeof path === 'function' ) ? path : getPath(path);
+  let easingFunc = ( typeof ease === 'function' ) ? ease : getEasing(ease);
+
+  // console.log('PATH: ', pathFunc.name, '  EASE: ', easingFunc.name);
+
+  return pathFunc(start, end, easingFunc(alpha), arc);
 }
 
 export {

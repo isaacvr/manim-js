@@ -1,6 +1,6 @@
 import { Path } from './Path';
-import { Point } from './Point';
-import { RIGHT, UP } from '../constants';
+import { RIGHT, UP, CENTER } from '../constants';
+import { types } from '../utils/arrays';
 
 const CONFIG = {
   closed: true,
@@ -10,18 +10,19 @@ const CONFIG = {
 class Rectangle extends Path {
 
   constructor(x, y, w, h, col) {
-    super([], col);
+    let p = ( types([x, y]) === 'nn' ) ? nj.array([x, y, 0]) : CENTER;
+    let objs = [];
+    let width = w || 1;
+    let height = h || 1;
+    objs.push( p.clone().tolist() );
+    objs.push( p.add( RIGHT.multiply(w) ).tolist() );
+    objs.push( p.add( RIGHT.multiply(w) ).add( UP.multiply(h) ).tolist() );
+    objs.push( p.add( UP.multiply(h) ).tolist() );
+    objs.push( p.clone().tolist() );
+    super(objs, col);
     this.loadConfig(CONFIG);
-    let p = new Point(x, y, 0);
-
-    this.objects = [];
-    this.width = w;
-    this.height = h;
-    this.objects[0] = p.clone();
-    this.objects[1] = p.add( RIGHT.mul(w) );
-    this.objects[2] = p.add( RIGHT.mul(w) ).add( UP.mul(h) );
-    this.objects[3] = p.add( UP.mul(h) );
-    this.objects[4] = p.clone();
+    this.width = width;
+    this.height = height;
   }
 
   get p() {

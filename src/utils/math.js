@@ -107,7 +107,19 @@ function tanh(x) {
   return Math.tanh(x);
 }
 
+function euclidMCD(a, b) {
+  return ( b == 0 ) ? a : euclidMCD(b, a % b);
+}
 
+function rotationMatrix(ang) {
+  let mat = [
+    [ Math.cos(ang), Math.sin(ang), 0],
+    [ Math.sin(-ang), Math.cos(ang), 0],
+    [ 0, 0, 1]
+  ];
+
+  return nj.array(mat);
+}
 
 export {
   fastRoot,
@@ -134,4 +146,6 @@ export {
   atanh,
   sqrt,
   tanh,
+  euclidMCD,
+  rotationMatrix
 }
