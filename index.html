@@ -14,6 +14,7 @@
   <body>
 
   </body>
+  <script src="./numjs.min.js" type="module"></script>
   <script src="./dist/animator.js" type="module"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js"></script>
@@ -33,41 +34,38 @@
       shapes['rec'] = new Rectangle(-250, -90, 500, 180);
       shapes['tri'] = new Triangle(50, -160, 410, 20, 151, 89);
       shapes['path'] = new Path([
-        new Point(-550, -160),
-        new Point(-450, 60),
-        new Point(0, -260),
-        new Point(46, -160),
-        new Point(-35, -160)
+        [-550, -160],
+        [-450, 60],
+        [0, -260],
+        [46, -160],
+        [-35, -160]
       ]);
-      shapes['lin'] = new Line(new Point(-200, 230), new Point(40, -30));
-      shapes['star'] = new Star(0, 0, 6, 190, 70);
-      // fig = shapes['circ'].clone();
-      fig = shapes['p1'].clone();
+      shapes['lin'] = new Line([ -200, 230 ], [ 40, -30 ]);
+      shapes['star'] = new Star(0, 0, 5, 190, 70);
+      fig = shapes['circ'].clone();
     }
 
-    function fancyTransition() {
-      let arr = [ 'rec', 'tri', 'path', 'p1', 'lin', 'star', 'circ' ];
+    function testPerformance() {
 
-      btn1.elt.disabled = true;
-      btn2.elt.disabled = true;
-
-      // let arr = [ 'rec', 'tri', 'path', 'p1' ];
-
-      let f = (pos) => {
-        if ( pos < arr.length ) {
-          let fig1 = shapes[ arr[pos] ];
-          let dur = +speedSlider.value();
-          return Animator.play(new Transform( fig, fig1, dur, 'softBounce' )).
-            then(() => Animator.wait()).
-            then(() => f(pos + 1));
-        } else {
-          // console.log('LALALA');
-          btn1.elt.disabled = false;
-          btn2.elt.disabled = false;
+      let arrFactory = function(len) {
+        let res = [];
+        for (let i = 0; i < len; i += 1) {
+          res.push([ Math.random(), Math.random(), Math.random() ]);
         }
+        return res;
       };
 
-      f(0);
+      let bigPath1 = new Path( arrFactory(500) );
+      let bigPath2 = new Path( arrFactory(500) );
+
+      console.time('interpolation');
+      try {
+        bigPath1.interpolate(bigPath2, 0.1);
+      } catch(e) {
+        console.log(e);
+      }
+      console.timeEnd('interpolation');
+
     }
 
     function setup() {
@@ -113,23 +111,12 @@
       figs.forEach((e) => { from.option( e ), to.option( e ) });
       eass.forEach((e) => { easingSelect.option( e ) });
 
-      from.selected('path');
-      to.selected('rec');
-      easingSelect.selected('bounce');
-      // console.log(to);
+      from.selected('circ');
+      to.selected('lin');
+      easingSelect.selected('linear');
 
       pathSelect.option('straight_path');
       pathSelect.option('arc_path');
-
-      // for (let i = 0, maxi = figs.length; i < maxi; i += 1) {
-      //   from.option( figs[i] );
-      //   to.option( figs[i] );
-      // }
-
-      // for (let i = 0, maxi = figs.length; i < maxi; i += 1) {
-      //   from.option( opts[i] );
-      //   to.option( opts[i] );
-      // }
 
       let reset = createButton('Reset');
       reset.mousePressed(init);
@@ -142,12 +129,15 @@
       if ( f instanceof Dot ) {
         stroke(f.color.toHex());
         strokeWeight(8);
+        // console.log('DRAWING Dot', f.x, f.y);
         point(f.x, -f.y);
         return;
       }
 
+      // console.log('DRAWING %s', f.constructor.name);
+
       let objs = f.objects;
-      let len = objs.length;
+      let len = f.length();
 
       beginShape();
 
@@ -161,7 +151,7 @@
       strokeWeight(str || 3);
 
       for (let i = 0; i < len; i += 1) {
-        vertex(objs[i].x, -objs[i].y);
+        vertex(objs.get(i, 0), -objs.get(i, 1));
       }
 
       endShape(( f.closed ) ? CLOSE : null);
@@ -172,6 +162,7 @@
       translate(width >> 1, height >> 1);
       drawFigure(fig);
       drawFigure(shapes['p2']);
+      // noLoop();
     }
 
   </script>

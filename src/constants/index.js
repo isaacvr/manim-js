@@ -1,11 +1,11 @@
-import { Point } from '../geometry/Point';
+const UP = nj.array([0, 1, 0]);
+const DOWN = nj.array([0, -1, 0]);
+const LEFT = nj.array([-1, 0, 0]);
+const RIGHT = nj.array([1, 0, 0]);
+const OUT = nj.array([0, 0, -1]);
+const IN = nj.array([0, 0, 1]);
 
-const UP = new Point(0, 1, 0);
-const DOWN = new Point(0, -1, 0);
-const LEFT = new Point(-1, 0, 0);
-const RIGHT = new Point(1, 0, 0);
-const OUT = new Point(0, 0, -1);
-const IN = new Point(0, 0, 1);
+const CENTER = nj.array([0, 0, 0]);
 
 const CIRCLE_POINTS = 100;
 
@@ -21,6 +21,7 @@ export {
   RIGHT,
   OUT,
   IN,
+  CENTER,
   CIRCLE_POINTS,
   ANIMATION_DURATION,
   ANIMATION_LAG_RATIO,

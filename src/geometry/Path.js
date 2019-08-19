@@ -1,7 +1,6 @@
-import { Point } from './Point';
 import { Color } from '../Color';
-import { range, sum, equal } from '../utils/arrays';
-import { max, min } from '../utils/math';
+import { max, min, euclidMCD } from '../utils/math';
+import { interpolate } from '../utils/bezier';
 
 const CONFIG = {
   closed: false,
@@ -10,21 +9,20 @@ const CONFIG = {
 
 class Path {
   constructor(pts, col) {
-    this.objects = [];
-    this.color = col || new Color();
-    this.border_color = col || new Color();
-
-    this.loadConfig(CONFIG);
-
-    if ( Array.isArray(pts) ) {
+    let arr = [];
+    if ( Array.isArray( pts ) ) {
       for (let i = 0, maxi = pts.length; i < maxi; i += 1) {
-        this.addBack(pts[i]);
+        arr[i] = [];
+        for (let j = 0; j < 3; j += 1) {
+          arr[i][j] = pts[i][j] || 0;
+        }
       }
     }
-  }
 
-  static checkType(p) {
-    return Point.isPoint(p) || ( Array.isArray(p) && p.length >= 2 );
+    this.objects = nj.array( arr );
+    this.color = col || new Color();
+    this.border_color = col || new Color();
+    this.loadConfig(CONFIG);
   }
 
   loadConfig(config) {
@@ -39,37 +37,12 @@ class Path {
 
   }
 
-  addFront(pt) {
-    if ( Path.checkType(pt) ) {
-      this.objects.unshift(new Point(pt));
-    }
-  }
-
-  addBack(pt) {
-    if ( Path.checkType(pt) ) {
-      this.objects.push(new Point(pt));
-    }
-  }
-
-  popFront() {
-    if ( this.objects.length > 0 ) {
-      this.objects.shift();
-    }
-  }
-
-  popBack() {
-    if ( this.objects.length > 0 ) {
-      this.objects.pop();
-    }
-  }
-
   clear() {
-    this.objects.length = 0;
+    this.objects = nj.array();
   }
 
   clone() {
     // console.log('CLONING: ', this.objects);
-    this.objects
     let copy = Object.assign({}, this);
 
     copy.__proto__ = this.__proto__;
@@ -78,40 +51,28 @@ class Path {
     delete copy.color;
     delete copy.border_color;
 
-    copy.objects = this.objects.map(e => e.clone());
+    copy.objects = this.objects.clone();
     copy.color = this.color.clone();
     copy.border_color = this.border_color.clone();
-
-    // console.log('CLONED: ', this.objects, copy.objects);
 
     return copy;
   }
 
   length() {
-    return this.objects.length;
+    return ~~this.objects.shape[0];
   }
 
   interpolate(p1, alpha, easing, path, ang) {
-    let len = min( this.length(), p1.length() );
-    for (let i = 0; i < len; i += 1) {
-      this.objects[i].interpolate( p1.objects[i], alpha, easing, path, ang );
-    }
+    this.objects = interpolate(this.objects, p1.objects, alpha, easing, path, ang);
     this.color.interpolate(p1.color, alpha, easing);
     this.border_color.interpolate(p1.border_color, alpha, easing);
-    // console.log('INTERPOLATION DONE: ', alpha);
     return this;
   }
 
-  interpolateBetween(p1, p2, alpha, easing, path, arg) {
-    // console.log('itbw: ', this.length(), p1.length(), p2.length());
-    let len = min( this.length(), p1.length(), p2.length() );
-    for (let i = 0; i < len; i += 1) {
-      this.objects[i] = p1.objects[i].clone().
-        interpolate( p2.objects[i], alpha, easing, path, arg );
-    }
+  interpolateBetween(p1, p2, alpha, easing, path, ang) {
+    this.objects = interpolate(p1.objects, p2.objects, alpha, easing, path, ang);
     this.color = p1.color.clone().interpolate(p2.color, alpha, easing);
     this.border_color = p1.border_color.clone().interpolate(p2.border_color, alpha, easing);
-    // console.log('INTERPOLATION DONE: ', alpha);
     return this;
   }
 
@@ -119,47 +80,65 @@ class Path {
     // console.log('P1: ', p1);
     let lt = p1.length();
     let lf = this.length();
-    this.fill_with_n_objects( max(0, lt - lf ) );
-    p1.fill_with_n_objects( max(0, lf - lt ) );
+    let mcd = euclidMCD(lt, lf);
+    let lcm = lt * lf / mcd;
+    let nt = lcm / lt;
+    let nf = lcm / lf;
+    let shouldReverse = p1.closed ^ this.closed;
+    // console.log('BEFORE ---- FROM: ', lf, 'TO: ', lt, nf, nt, lcm);
+    this.fill_with_n_objects( nf, shouldReverse &&  !this.closed );
+    p1.fill_with_n_objects( nt, shouldReverse &&  !p1.closed );
+    // console.log(this.objects.toString());
+    // console.log('AFTER ----- FROM: ', this.length(), 'TO: ', p1.length());
   }
 
-  fill_with_n_objects(cant) {
+  fill_with_n_objects(cant, reversed) {
 
     if ( cant === 0 ) {
       return;
     }
 
-    let len = this.length();
-    let tot = len + cant;
-    let newObjects = [];
-    let cants = (function() {
-      let c = range(tot).map(e => ~~(e * len / tot));
-      let res = [];
-      for (let i = 0; i < len; i += 1) {
-        res.push( sum( equal(c, i) ) );
-      }
-      return res;
-    }());
-
-    if ( len > 1 ) {
-      if ( cants[len - 1] > 1 ) {
-        cants[ len - 2 ] += cants[ len - 1 ] - 1;
-        cants[ len - 1 ] = 1;
-      }
+    if ( !reversed ) {
+      cant *= 2;
     }
+
+    let len = this.length();
+    let temp = [];
 
     for (let i = 0; i < len; i += 1) {
-      newObjects.push( this.objects[i].clone() );
-      let dt = 1 / max(1, cants[i]);
-      let next = this.objects[ (i + 1) % len ];
+      let cur = this.objects.slice([i, i + 1]);
+      temp.push( cur.tolist()[0] );
+      let dt = 1 / max(1, cant);
+      let next = this.objects.slice([ (i + 1) % len, (i + 2) % len ]);
+      let tot = cant;
 
-      for (let j = 1; j < cants[i]; j += 1) {
-        newObjects.push( this.objects[i].clone().interpolate(next, dt * j) );
-        // newObjects.push( this.objects[i].clone() );
+      if ( i + 2 >= len ) {
+        if ( i + 1 >= len ) {
+          break;
+        } else {
+          tot = 2 * cant - 1;
+          dt = 1 / ( cant * 2 );
+          next = this.objects.slice([ len - 1, len ]);
+        }
+      }
+
+      for (let j = 1; j < tot; j += 1) {
+        temp.push( interpolate(cur, next, dt * j).tolist()[0] );
       }
     }
 
-    this.objects = newObjects;
+    let result = [];
+
+    if ( reversed ) {
+      for (let i = temp.length - 1; i >= 0; i -= 1) {
+        result.unshift( temp[i] );
+        result.push( [].concat(temp[i]) );
+      }
+    } else {
+      result = temp;
+    }
+
+    this.objects = nj.array( result );
 
   }
 

@@ -1,6 +1,6 @@
 import { Path } from "./Path";
-import { Point } from "./Point";
-import { interpolate } from "../utils/bezier";
+import { CENTER } from "../constants";
+import { types } from "../utils/arrays";
 
 const CONFIG = {
   rad_long: 10,
@@ -16,7 +16,7 @@ class Star extends Path {
   constructor(cx, cy, cant, rl, rs, col) {
     super([], col);
     this.loadConfig(CONFIG);
-    this.center = new Point(cx, cy);
+    this.center = ( types([cx, cy]) === 'nn' ) ? nj.array([cx, cy, 0]) : CENTER;
     this.rad_long = rl || this.rad_long;
     this.rad_short = rs || this.rad_short;
     this.cant = cant || this.cant;
@@ -24,23 +24,20 @@ class Star extends Path {
   }
 
   generatePoints() {
-    this.objects.length = 0;
-
-    let cant = this.cant;
-    let step = Math.PI / cant;
-    let center = this.center;
-    let r1 = this.rad_long;
-    let r2 = this.rad_short;
-    let arg0 = this.init_angle;
-
-    for (let i = 0, j = 0, maxi = cant << 1; i < maxi; i += 1, j = 1 - j) {
-      this.objects.push(
-        center.add(
-          Point.fromPolar(interpolate(r1, r2, j), arg0 + step * i)
-        )
-      );
-    }
-
+    let tau = Math.PI * 2;
+    let total = this.cant * 2;
+    let angs = nj.linspace(0, tau, total + 1).slice([total]);
+    // console.log(angs.toString());
+    let evens = nj.arange( total ).mod(2);
+    let odds = nj.arange( total ).add(1).mod(2);
+    let xe = nj.cos( angs ).multiply( this.rad_short ).add( this.center.get(0) ).multiply( evens );
+    let ye = nj.sin( angs ).multiply( this.rad_short ).add( this.center.get(1) ).multiply( evens );
+    let xo = nj.cos( angs ).multiply( this.rad_long ).add( this.center.get(0) ).multiply( odds );
+    let yo = nj.sin( angs ).multiply( this.rad_long ).add( this.center.get(1) ).multiply( odds );
+    let x = xe.add(xo);
+    let y = ye.add(yo);
+    let z = nj.zeros( total );
+    this.objects = nj.stack([ x, y, z ]).transpose();
   }
 }
 

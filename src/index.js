@@ -1,3 +1,19 @@
+/// Add some stuff to numjs
+
+nj.linspace = nj.linspace || function linspace(start, stop, elements, dtype) {
+
+  let num = ~~elements;
+
+  if ( num <= 0 ) {
+    return nj.array([], dtype);
+  } else if ( num === 1 ) {
+    return nj.array([start], dtype);
+  }
+
+  return nj.arange(start, stop, (stop - start) / (num - 1), dtype).slice([ num ]);
+
+}
+
 import * as geometry from './geometry';
 import { Transform } from './animations/Transform';
 import { Animator } from './animator/Animator';
