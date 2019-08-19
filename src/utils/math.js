@@ -12,9 +12,9 @@ function fastRoot(n) {
   return res;
 }
 
-function clip(val, a, b) {
-  return max( a, min(val, b) );
-}
+// function clip(val, a, b) {
+//   return max( a, min(val, b) );
+// }
 
 function abs(x) {
   return Math.abs(x);
@@ -123,7 +123,7 @@ function rotationMatrix(ang) {
 
 export {
   fastRoot,
-  clip,
+  // clip,
   sigmoid,
   abs,
   max,

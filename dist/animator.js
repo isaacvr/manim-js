@@ -33,9 +33,9 @@
    * Newthon iterative method for the squared root
    */
 
-  function clip(val, a, b) {
-    return max( a, min(val, b) );
-  }
+  // function clip(val, a, b) {
+  //   return max( a, min(val, b) );
+  // }
 
   function abs(x) {
     return Math.abs(x);
@@ -43,14 +43,6 @@
 
   function max() {
     return Math.max.apply(null, arguments);
-  }
-
-  function min() {
-    return Math.min.apply(null, arguments);
-  }
-
-  function sigmoid(x) {
-    return 1 / (1 + exp(-x));
   }
 
   function exp(x) {
@@ -174,20 +166,28 @@
     return linear;
   }
 
+  function interpolate(start, end, alpha, ease, path, arc) {
+    let pathFunc = ( typeof path === 'function' ) ? path : getPath(path);
+    let easingFunc = ( typeof ease === 'function' ) ? ease : getEasing(ease);
+
+    // console.log('PATH: ', pathFunc.name, '  EASE: ', easingFunc.name);
+
+    return pathFunc(start, end, easingFunc(alpha), arc);
+  }
+
   function adjust(val) {
-    return clip( ~~val, 0, 255 );
+    return nj.clip( ~~val, 0, 255 ).get(0);
   }
 
   class Color {
     constructor(a, b, c, d, e) {
       let tp = types([ a, b, c, d, e ]);
 
-      this.r = adjust( Math.random() * 255 );
-      this.g = adjust( Math.random() * 255 );
-      this.b = adjust( Math.random() * 255 );
-      this.a = 1;
-
-      // console.log('TYPES: ', tp);
+      this.color = nj.random(4).multiply(255);
+      this.color.set(0, adjust( this.color.get(0) ) );
+      this.color.set(1, adjust( this.color.get(1) ) );
+      this.color.set(2, adjust( this.color.get(2) ) );
+      this.color.set(3, 1);
 
       switch( tp ) {
         case 'nnnns': {
@@ -240,14 +240,14 @@
     // }
 
     fromRGB(r, g, b) {
-      this.r = adjust(r);
-      this.g = adjust(g);
-      this.b = adjust(b);
+      this.color.set(0, adjust(r));
+      this.color.set(1, adjust(g));
+      this.color.set(2, adjust(b));
     }
 
     fromRGBA(r, g, b, a) {
       this.fromRGB(r, g, b);
-      this.a = clip(a, 0, 1);
+      this.color.set(3, nj.clip(a, 0, 1).get(0));
     }
 
     fromString(s) {
@@ -267,40 +267,25 @@
     interpolate(col, alpha, easing) {
       let pathType = getPath('straight_path');
       let easingType = ( typeof easing === 'function' ) ? easing : getEasing(easing);
-      // let alp = clip(alpha, 0, 1);
-      // let alp = alpha;
-      this.r = adjust( pathType(this.r, col.r, easingType(alpha)) );
-      this.g = adjust( pathType(this.g, col.g, easingType(alpha)) );
-      this.b = adjust( pathType(this.b, col.b, easingType(alpha)) );
-      this.a = pathType(this.a, col.a, easingType(alpha));
+      let temp = interpolate(this.color, col.color, alpha, easingType, pathType).tolist();
+      temp = temp.map((e, p) => ((p < 3) ? adjust(e) : e));
+      temp[3] = nj.clip(temp[3], 0, 1).get(0);
+      this.color = nj.array(temp);
       return this;
     }
 
     clone() {
       let res = new Color(0, 0, 0);
-      res.r = this.r;
-      res.g = this.g;
-      res.b = this.b;
-      res.a = this.a;
+      res.color = this.color.clone();
       return res;
     }
 
     toHex() {
-      let r = ('00' + this.r.toString(16)).substr(-2, 2);
-      let g = ('00' + this.g.toString(16)).substr(-2, 2);
-      let b = ('00' + this.b.toString(16)).substr(-2, 2);
-      let a = ('00' + adjust(this.a * 255).toString(16)).substr(-2, 2);
-      return '#' + r + g + b + a;
+      let temp = this.color.tolist();
+      temp[3] = adjust(temp[3] * 255);
+      let res = temp.map(e => ('00' + e.toString(16)).substr(-2, 2));
+      return '#' + res.join('');
     }
-  }
-
-  function interpolate(start, end, alpha, ease, path, arc) {
-    let pathFunc = ( typeof path === 'function' ) ? path : getPath(path);
-    let easingFunc = ( typeof ease === 'function' ) ? ease : getEasing(ease);
-
-    // console.log('PATH: ', pathFunc.name, '  EASE: ', easingFunc.name);
-
-    return pathFunc(start, end, easingFunc(alpha), arc);
   }
 
   const CONFIG = {
@@ -660,15 +645,11 @@
     Star: Star
   });
 
-  function smooth(t, inflection=10.0) {
-    let error = sigmoid(-inflection / 2);
-    let val = ( sigmoid(inflection * (t - 0.5)) - error) / (1 - 2 * error);
-    return clip(val, 0, 1);
-  }
+  // import { smooth } from '../utils/rate_functions';
 
   let CONFIG$7 = {
     "duration": ANIMATION_DURATION,
-    "rate_func": smooth,
+    // "rate_func": smooth,
     "name": null,
     "remover": false,
     "lag_ratio": ANIMATION_LAG_RATIO,

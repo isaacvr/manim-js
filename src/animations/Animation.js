@@ -1,9 +1,9 @@
 import { ANIMATION_DURATION, ANIMATION_LAG_RATIO } from '../constants';
-import { smooth } from '../utils/rate_functions';
+// import { smooth } from '../utils/rate_functions';
 
 let CONFIG = {
   "duration": ANIMATION_DURATION,
-  "rate_func": smooth,
+  // "rate_func": smooth,
   "name": null,
   "remover": false,
   "lag_ratio": ANIMATION_LAG_RATIO,
